@@ -7,7 +7,9 @@
 
 const L = {
   en: {
-    title: "Starr County Jail Roster", subtitle: "Live inmate & booking lookup — Rio Grande City, TX",
+    title: "Jail Roster", eyebrow: "Starr County · Texas",
+    subtitle: "Live inmate & booking lookup — Rio Grande City, TX",
+    liveLabel: "Live",
     statusInit: "Loading roster…",
     statusOk: n => `${n} in custody`,
     statusErr: "Couldn't load the roster. The mirror updates hourly — try again in a moment.",
@@ -16,6 +18,7 @@ const L = {
     sortNewest: "Newest booking", sortName: "Name A–Z", sortDate: "Booked date",
     sortOldest: "Oldest first", sortYoungest: "Youngest first",
     sortHeaviest: "Heaviest first", sortLightest: "Lightest first",
+    sortTallest: "Tallest first", sortShortest: "Shortest first",
     sexAll: "Men & women", sexMen: "Men", sexWomen: "Women",
     sumCustody: n => `In custody: ${n}`, sumMen: n => `Men: ${n}`,
     sumWomen: n => `Women: ${n}`, sumPhotos: n => `Photos: ${n}`,
@@ -34,7 +37,9 @@ const L = {
     live: "Hourly mirror · updated"
   },
   es: {
-    title: "Lista de Presos — Condado de Starr", subtitle: "Consulta de presos e ingresos en vivo — Rio Grande City, TX",
+    title: "Lista de Presos", eyebrow: "Condado de Starr · Texas",
+    subtitle: "Consulta de presos e ingresos en vivo — Rio Grande City, TX",
+    liveLabel: "En vivo",
     statusInit: "Cargando lista…",
     statusOk: n => `${n} en custodia`,
     statusErr: "No se pudo cargar la lista. El espejo se actualiza cada hora — intenta de nuevo en un momento.",
@@ -43,6 +48,7 @@ const L = {
     sortNewest: "Ingreso más reciente", sortName: "Nombre A–Z", sortDate: "Fecha de ingreso",
     sortOldest: "Mayores primero", sortYoungest: "Menores primero",
     sortHeaviest: "Más pesados primero", sortLightest: "Más ligeros primero",
+    sortTallest: "Más altos primero", sortShortest: "Más bajos primero",
     sexAll: "Hombres y mujeres", sexMen: "Hombres", sexWomen: "Mujeres",
     sumCustody: n => `En custodia: ${n}`, sumMen: n => `Hombres: ${n}`,
     sumWomen: n => `Mujeres: ${n}`, sumPhotos: n => `Fotos: ${n}`,
@@ -157,6 +163,12 @@ function tickClock() {
 function haystack(r) {
   return (nameOf(r) + " " + (r.bookingID || "") + " " + (r.ptsBookingID ?? "") + " " + chargeText(r)).toLowerCase();
 }
+function heightInches(h) {
+  if (!h) return null;
+  const m = String(h).match(/(\d+)'?\s*(\d{1,2})?/);
+  if (!m) return null;
+  return +m[1] * 12 + (+(m[2] || 0));
+}
 function filtered() {
   const q = state.q.trim().toLowerCase();
   const sex = $("#sexSel").value;
@@ -173,7 +185,9 @@ function filtered() {
     oldest: (a, b) => p(a.dob) - p(b.dob),
     youngest: (a, b) => p(b.dob) - p(a.dob),
     heaviest: (a, b) => (b.weight ?? -1) - (a.weight ?? -1),
-    lightest: (a, b) => (a.weight ?? Infinity) - (b.weight ?? Infinity)
+    lightest: (a, b) => (a.weight ?? Infinity) - (b.weight ?? Infinity),
+    tallest: (a, b) => (heightInches(b.height) ?? -1) - (heightInches(a.height) ?? -1),
+    shortest: (a, b) => (heightInches(a.height) ?? Infinity) - (heightInches(b.height) ?? Infinity)
   }[sort] || (() => 0);
   return list.slice().sort(sorter);
 }
