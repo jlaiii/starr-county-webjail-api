@@ -26,17 +26,12 @@
     <div class="hero-inner">
       <div class="brand">
         <svg class="logo" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-             stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+             stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M3 21h18"/>
           <path d="M5 21V9.5L12 4.5l7 5V21"/>
           <path d="M9 21v-6h6v6"/>
-          <path d="M12 7.2v.01M10 10.5h4"/>
         </svg>
-        <div>
-          <p class="eyebrow" data-i18n="eyebrow">Starr County · Texas</p>
-          <h1 data-i18n="title">Jail Roster</h1>
-          <p class="sub" data-i18n="subtitle">Live inmate &amp; booking lookup — Rio Grande City, TX</p>
-        </div>
+        <h1 data-i18n="title">Jail Roster</h1>
       </div>
       <div class="hero-actions">
         <span class="livepill"><span class="dot ok" aria-hidden="true"></span><span data-i18n="liveLabel">Live</span></span>
@@ -44,14 +39,14 @@
         <a class="chip ghost" href="https://github.com/jlaiii/starr-county-webjail-api" target="_blank" rel="noopener" data-i18n="viewCode">View code</a>
       </div>
     </div>
-    <div class="statusbar">
+  </header>
+
+  <main class="wrap">
+    <div class="statusline">
       <span id="statusDot" class="dot" aria-hidden="true"></span>
       <span id="statusText" data-i18n="statusInit">Loading roster…</span>
       <span id="updated" class="upd"></span>
     </div>
-  </header>
-
-  <main class="wrap">
     <nav class="tabs" aria-label="Views">
       <button id="tabInmates" class="tabbtn active" type="button" data-i18n="tabInmates">Inmates</button>
       <button id="tabPhotos" class="tabbtn" type="button" data-i18n="tabPhotos">Photos</button>
