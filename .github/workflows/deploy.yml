@@ -1,0 +1,36 @@
+name: Mirror county feed -> GitHub Pages
+
+on:
+  schedule:
+    - cron: "23 * * * *"   # hourly, offset from the county's :00 batch job
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["web/**", "tools/**", ".github/workflows/**"]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Mirror county roster (mugshots, charges -> _site)
+        run: python3 tools/mirror.py
+
+      - name: Copy web app into site
+        run: cp -R web/. _site/
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - uses: actions/deploy-pages@v4

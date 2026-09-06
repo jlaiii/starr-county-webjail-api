@@ -3,3 +3,4 @@ __pycache__/
 mugshots/
 *.json.tmp
 .DS_Store
+_site/

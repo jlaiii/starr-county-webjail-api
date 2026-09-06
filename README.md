@@ -30,17 +30,21 @@ observation. Treat field names/behaviors as stable-but-unconfirmed.
 
 ## Live demo (GitHub Pages)
 
-The [`web/`](web/) folder is a self-contained, mobile-friendly web app that
-queries the county API straight from the browser (the API sends permissive
-CORS headers). No server needed.
+<https://jlaiii.github.io/starr-county-webjail-api/> — a self-contained,
+mobile-friendly web app. **A GitHub Actions workflow (`.github/workflows/
+deploy.yml`) mirrors the county API hourly** (roster + charges + mugshots)
+into the Pages site (`tools/mirror.py`), so the app is fast and needs no
+CORS relay or runtime calls to the county — data.json and lazy-loaded
+mugshot files come from the same origin over HTTPS.
 
-- Search by name or booking number (client-side — the API ignores filters)
+- Search by name or booking number
 - Sort: newest booking / name / booked date
-- Tap any inmate for details + charges (`/inmate-detail`)
+- Tap any inmate for details + charges
 - English 🇺🇸 / Español 🇲🇽 toggle, dark mode, mobile-first
 
-Run it locally: `cd web && python3 -m http.server 8000` → <http://localhost:8000>
-or open `web/index.html` directly.
+Run it locally against a fresh mirror:
+`python3 tools/mirror.py && cd _site && python3 -m http.server 8000`
+→ <http://localhost:8000>
 
 ## Quick facts
 
@@ -87,6 +91,10 @@ print(roster["total"], "in custody; newest:", roster["data"][0]["FirstName"], ro
 ```
 web/
   index.html / styles.css / app.js    self-contained lookup app (GitHub Pages)
+tools/
+  mirror.py                           hourly county-API -> Pages mirror
+.github/workflows/
+  deploy.yml                          cron: mirror + deploy Pages
 docs/
   01-endpoints.md              every endpoint, verbs, statuses, envelopes
   02-data-model.md             field dictionaries, types, enums (as observed)
