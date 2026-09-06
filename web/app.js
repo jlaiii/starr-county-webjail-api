@@ -122,22 +122,19 @@ function age(dob) {
   return a >= 0 ? a : null;
 }
 /* "Booked today / yesterday / 3 days ago" — absolute date past 6 days.
-   Timezone-aware: dates stored as ...Z compare against UTC calendar,
-   plain dates compare against the local calendar. */
+   Reference = the viewer's local calendar (the jail's day is the user's day).
+   County labels are date-only and can sit one day AHEAD of a Texas evening
+   (UTC-midnight serialization), so a negative difference clamps to "today". */
 function bookedPhrase(s) {
   const p = parseDate(s);
   if (!p) return dateOnly(s);
   const now = new Date();
-  const s0 = s.trim();
-  const midnight = /^.*T00:00(:00(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})?$/.test(s0);
-  const z = !midnight && /(Z|[+-]\d{2}:?\d{2})$/.test(s0);  // midnight = plain calendar date (county local)
-  const ref = z
-    ? { y: now.getUTCFullYear(), mo: now.getUTCMonth() + 1, d: now.getUTCDate() }
-    : { y: now.getFullYear(), mo: now.getMonth() + 1, d: now.getDate() };
-  const days = Math.round((Date.UTC(+ref.y, ref.mo - 1, ref.d) - Date.UTC(+p.y, p.mo - 1, p.d)) / 864e5);
+  const ref = { y: now.getFullYear(), mo: now.getMonth() + 1, d: now.getDate() };
+  let days = Math.round((Date.UTC(+ref.y, ref.mo - 1, ref.d) - Date.UTC(+p.y, p.mo - 1, p.d)) / 864e5);
+  if (days < 0) days = 0;  // future-looking county label -> same-day booking
   if (days === 0) return t("bToday");
   if (days === 1) return t("bYesterday");
-  if (days > 1 && days <= 6) return t("bDaysAgo")(days);
+  if (days <= 6) return t("bDaysAgo")(days);
   return dateOnly(s);
 }
 function money(v) {
