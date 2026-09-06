@@ -5,7 +5,16 @@
 "use strict";
 
 const API = "http://64.225.20.254:3030";   // plain HTTP endpoint (see docs/)
+const RELAY = "https://api.allorigins.win/raw?url=";  // CORS relay for HTTPS pages
 const PAGE = 12;                            // ~3-4 MB per page incl. mugshots
+// GitHub Pages is HTTPS; browsers block plain-HTTP fetches on HTTPS pages,
+// so when served over https we relay the county API through allorigins
+// (public CORS proxy). Add ?direct=1 to force the direct connection
+// (works on http hosts or localhost).
+const useRelay = location.protocol === "https:" && !/direct=1/.test(location.search);
+const apiUrl = path => useRelay
+  ? RELAY + encodeURIComponent(API + path)
+  : API + path;
 const L = {
   en: {
     title: "Starr County Jail Roster", subtitle: "Live inmate & booking lookup — Rio Grande City, TX",
@@ -78,8 +87,8 @@ function mugUrl(r) {
 
 /* ---------- data ---------- */
 async function fetchPage(skip) {
-  const url = `${API}/inmates?$limit=${PAGE}&$skip=${skip}&$sort[BookingID]=-1`;
-  const res = await fetch(url, { headers: { "User-Agent": "starr-roster-web/1.0" } });
+  const url = apiUrl(`/inmates?$limit=${PAGE}&$skip=${skip}&$sort[BookingID]=-1`);
+  const res = await fetch(url);
   if (!res.ok) throw new Error("HTTP " + res.status);
   return res.json();
 }
@@ -201,7 +210,7 @@ async function openDetail(pid) {
 function row(k, v) { return `<div class="srow"><span>${esc(k)}</span><b>${v}</b></div>`; }
 async function loadCharges(pid) {
   try {
-    const res = await fetch(`${API}/inmate-detail/${pid}`);
+    const res = await fetch(apiUrl(`/inmate-detail/${pid}`));
     if (!res.ok) throw new Error("HTTP " + res.status);
     const d = await res.json();
     const offs = d.offences || [];
@@ -241,7 +250,7 @@ function applyLang() {
 /* ---------- init ---------- */
 let deb;
 function init() {
-  $("#apiUrl").textContent = API;
+  $("#apiUrl").textContent = useRelay ? "county feed via https relay (api.allorigins.win)" : API;
   applyLang();
   skeletons(6);
   loadMore(true);
