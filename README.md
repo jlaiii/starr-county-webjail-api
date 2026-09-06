@@ -8,9 +8,9 @@
 bonds and booking dates, with data pulled **directly from the county's public
 Webjail feed** (updated hourly).
 
-- 🌐 **Use it live**: <https://jlaiii.github.io/starr-county-webjail-api/>
-- 📚 **API field guide** (for developers *and* AI agents): see [`docs/`](docs/)
-- 💻 **Working code**: see [`examples/`](examples/)
+- **Use it live**: <https://jlaiii.github.io/starr-county-webjail-api/>
+- **API field guide** (for developers *and* AI agents): see [`docs/`](docs/)
+- **Working code**: see [`examples/`](examples/)
 
 The county publishes no roster page on its own website — its booking system
 feeds this public Webjail API, which is what this project documents, mirrors,
@@ -40,11 +40,11 @@ mugshot files come from the same origin over HTTPS.
 - Search by name or booking number
 - Sort: newest booking / name / booked date
 - Tap any inmate for details + charges
-- English 🇺🇸 / Español 🇲🇽 toggle, dark mode, mobile-first
+- English/Spanish toggle, dark mode, mobile-first
 
 Run it locally against a fresh mirror:
-`python3 tools/mirror.py && cd _site && python3 -m http.server 8000`
-→ <http://localhost:8000>
+`python3 tools/mirror.py && cd _site && python3 -m http.server 8000`,
+then open <http://localhost:8000>
 
 ## Quick facts
 

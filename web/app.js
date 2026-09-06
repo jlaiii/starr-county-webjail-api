@@ -53,6 +53,20 @@ const esc = s => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").re
 const state = { records: [], loadedAt: null, q: "", err: false };
 
 function nameOf(r) { return r.name || [r.FirstName, r.MiddleName, r.LastName].filter(Boolean).join(" "); }
+function initials(name) {
+  const w = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if (!w.length) return "—";
+  const a = w[0][0] || "";
+  const b = w.length > 1 ? (w[w.length - 1][0] || "") : (w[0][1] || "");
+  return (a + b).toUpperCase();
+}
+function avFail(img) {
+  const s = document.createElement("span");
+  s.className = "av";
+  s.textContent = img.dataset.init || "—";
+  s.setAttribute("aria-hidden", "true");
+  img.replaceWith(s);
+}
 function dateOnly(s) { s = String(s || ""); return s.length >= 10 && s[4] === "-" ? `${s[5]}/${s[8]}/${s.slice(0, 4)}` : s.slice(0, 10) || "—"; }
 function age(dob) {
   if (!dob) return null;
@@ -84,7 +98,7 @@ async function load() {
     setStatus("statusErr", 0, "err");
     $("#grid").innerHTML = "";
     let p = $("#progress");
-    p.innerHTML = `<button class="btn" id="retryBtn" type="button">↻ ${esc(t("retry"))}</button>`;
+    p.innerHTML = `<button class="btn" id="retryBtn" type="button">${esc(t("retry"))}</button>`;
     $("#retryBtn").onclick = () => { p.innerHTML = ""; load(); };
   }
 }
@@ -118,9 +132,10 @@ function applyFilters() {
 }
 function cardHTML(r) {
   const a = age(r.dob);
+  const init = initials(nameOf(r));
   const thumb = r.img
-    ? `<img class="thumb" loading="lazy" src="${esc(r.img)}" alt="Mugshot of ${esc(nameOf(r))}" onerror="this.outerHTML='<span class=&quot;av&quot;>👤</span>'">`
-    : `<span class="av">👤</span>`;
+    ? `<img class="thumb" loading="lazy" src="${esc(r.img)}" data-init="${esc(init)}" alt="Mugshot of ${esc(nameOf(r))}" onerror="avFail(this)">`
+    : `<span class="av" aria-hidden="true">${esc(init)}</span>`;
   const badge = r.imgPub === false ? `<span class="badge withheld">${esc(t("withheld"))}</span>` : "";
   return `<button type="button" class="card" data-pid="${esc(r.ptsBookingID)}">
     ${thumb}
@@ -158,7 +173,7 @@ function openDetail(pid) {
   const a = age(r.dob);
   const img = r.img && r.imgPub !== false;
   $("#mImg").hidden = !img;
-  if (img) $("#mImg").src = r.img;
+  if (img) { $("#mImg").src = r.img; $("#mImg").onerror = () => { $("#mImg").hidden = true; }; }
   $("#mName").textContent = nameOf(r);
   const meta = [`#${r.bookingID}`, `${t("booked")} ${dateOnly(r.booked)}`,
     r.gender && r.race ? `${r.gender} · ${r.race}` : (r.gender || r.race || "")].filter(Boolean).join(" · ");
