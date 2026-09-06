@@ -7,7 +7,8 @@
 
 const L = {
   en: {
-    title: "Jail Roster", eyebrow: "Starr County · Texas",
+    title: "Starr County Jail", hsub: "Inmate roster · Rio Grande City, TX",
+    eyebrow: "Starr County · Texas",
     subtitle: "Live inmate & booking lookup — Rio Grande City, TX",
     liveLabel: "Live",
     statusInit: "Loading roster…",
@@ -37,7 +38,8 @@ const L = {
     live: "Hourly mirror · updated"
   },
   es: {
-    title: "Lista de Presos", eyebrow: "Condado de Starr · Texas",
+    title: "Cárcel del Condado de Starr", hsub: "Lista de presos · Rio Grande City, TX",
+    eyebrow: "Condado de Starr · Texas",
     subtitle: "Consulta de presos e ingresos en vivo — Rio Grande City, TX",
     liveLabel: "En vivo",
     statusInit: "Cargando lista…",

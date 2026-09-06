@@ -215,3 +215,15 @@ select,.tabbtn,.sumchip,.close{transition:background .15s ease,color .15s ease,b
 .statusline .upd{margin-left:auto;font-size:11.5px;opacity:.9}
 .statusline .dot{width:8px;height:8px}
 .wrap{padding-top:12px}
+
+/* ===== brand lockup (v4) ===== */
+.brandtxt{display:flex;flex-direction:column;justify-content:center;min-width:0;line-height:1.15}
+.hero h1{font-size:15px;margin:0}
+.hsub{margin:1px 0 0;font-size:9.5px;letter-spacing:.04em;opacity:.68;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:480px){
+  .hero h1{font-size:13.5px}
+  .hsub{font-size:9px}
+  .hero-actions .ghost{display:none}
+}
+.hero-inner{min-height:40px}
