@@ -241,10 +241,10 @@ function updateCounts() {
 function renderCards(list) {
   $("#photogrid").style.display = "none";
   $("#grid").style.display = "grid";
-  $("#grid").innerHTML = list.map(cardHTML).join("") ||
+  $("#grid").innerHTML = list.map((r, i) => cardHTML(r, Math.min(i, 10))).join("") ||
     `<div class="empty" style="display:block"><p>${esc(t("noResults"))}</p></div>`;
 }
-function cardHTML(r) {
+function cardHTML(r, di) {
   const a = age(r.dob);
   const init = initials(nameOf(r));
   const thumb = r.img && r.imgPub !== false
@@ -255,7 +255,7 @@ function cardHTML(r) {
     ? `<span class="cmeta chg"><span>${esc(t("charges"))}: ${ch.length}</span>` +
       (ch[0].desc ? `<span class="ellip">${esc(ch[0].desc)}${ch.length > 1 ? " +" + (ch.length - 1) : ""}</span>` : "") + `</span>`
     : `<span class="cmeta chg">${esc(t("noCharges"))}</span>`;
-  return `<button type="button" class="card" data-pid="${esc(r.ptsBookingID)}">
+  return `<button type="button" class="card" data-pid="${esc(r.ptsBookingID)}" style="--i:${di}">
     ${thumb}
     <div class="cbody">
       <span class="cname">${esc(nameOf(r))}</span>
@@ -273,8 +273,8 @@ function cardHTML(r) {
 function renderPhotos(list) {
   $("#grid").style.display = "none";
   $("#photogrid").style.display = "grid";
-  $("#photogrid").innerHTML = list.length ? list.map(p => `
-    <button type="button" class="ptile" data-pid="${esc(p.ptsBookingID)}" title="${esc(nameOf(p))}">
+  $("#photogrid").innerHTML = list.length ? list.map((p, i) => `
+    <button type="button" class="ptile" data-pid="${esc(p.ptsBookingID)}" title="${esc(nameOf(p))}" style="--i:${Math.min(i, 16)}">
       <img loading="lazy" src="${esc(p.img)}" alt="Mugshot of ${esc(nameOf(p))}">
     </button>`).join("") : "";
 }
