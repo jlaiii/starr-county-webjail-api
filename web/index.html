@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Starr County Jail Roster — Live Inmate Lookup (Texas)</title>
+  <meta name="description" content="Live Starr County, TX jail inmate roster & booking lookup. Search current inmates by name or booking number, view mugshots, charges, bonds, and booking dates — updated hourly from the county's public Webjail feed.">
+  <meta name="keywords" content="Starr County jail, Starr County inmate search, Starr County roster, Rio Grande City jail, Starr County mugshots, Texas jail lookup, Starr County bookings, webjail">
+  <meta name="robots" content="index,follow">
+  <link rel="canonical" href="https://jlaiii.github.io/starr-county-webjail-api/">
+  <!-- Open Graph / social -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Starr County Jail Roster">
+  <meta property="og:title" content="Starr County Jail Roster — Live Inmate Lookup">
+  <meta property="og:description" content="Search current Starr County TX inmates: mugshots, booking numbers, charges & bonds. Live data from the county's public Webjail API, updated hourly.">
+  <meta property="og:url" content="https://jlaiii.github.io/starr-county-webjail-api/">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Starr County Jail Roster — Live Inmate Lookup">
+  <meta name="twitter:description" content="Search current Starr County TX inmates: mugshots, booking numbers, charges & bonds. Updated hourly.">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏛️</text></svg>">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="hero">
+    <div class="hero-inner">
+      <div class="brand">
+        <span class="logo" aria-hidden="true">🏛️</span>
+        <div>
+          <h1 data-i18n="title">Starr County Jail Roster</h1>
+          <p class="sub" data-i18n="subtitle">Live inmate &amp; booking lookup — Rio Grande City, TX</p>
+        </div>
+      </div>
+      <div class="hero-actions">
+        <button id="langBtn" class="chip" type="button" aria-label="Toggle language">ES</button>
+        <a class="chip ghost" href="https://github.com/jlaiii/starr-county-webjail-api" target="_blank" rel="noopener" data-i18n="viewCode">View code</a>
+      </div>
+    </div>
+    <div class="statusbar">
+      <span id="statusDot" class="dot" aria-hidden="true"></span>
+      <span id="statusText" data-i18n="statusInit">Connecting to the county feed…</span>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="controls" aria-label="Search and filter">
+      <input id="q" type="search" inputmode="search" autocomplete="off"
+             placeholder="Search name or booking #…" data-i18n-ph="searchPh">
+      <div class="control-row">
+        <select id="sortSel" aria-label="Sort">
+          <option value="newest" data-i18n="sortNewest">Newest booking</option>
+          <option value="name" data-i18n="sortName">Name A–Z</option>
+          <option value="date" data-i18n="sortDate">Booked date</option>
+        </select>
+        <button id="moreBtn" class="btn" type="button" style="display:none" data-i18n="loadMore">Load more</button>
+      </div>
+    </section>
+
+    <p id="progress" class="progress" role="status"></p>
+    <div id="grid" class="grid" aria-live="polite"></div>
+    <div id="empty" class="empty" style="display:none">
+      <p data-i18n="noResults">No inmates match your search.</p>
+    </div>
+  </main>
+
+  <!-- detail modal -->
+  <div id="modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="mName" style="display:none">
+    <div class="sheet">
+      <button id="mClose" class="close" type="button" aria-label="Close">✕</button>
+      <img id="mImg" class="mimg" alt="" hidden>
+      <div class="mhead">
+        <h2 id="mName"></h2>
+        <p id="mMeta" class="mut"></p>
+      </div>
+      <div id="mBody" class="mbody"></div>
+    </div>
+  </div>
+
+  <footer class="foot">
+    <p><b data-i18n="footTitle">About this site</b></p>
+    <p data-i18n="footData">Roster data comes directly from the Starr County jail system's public Webjail feed (updated hourly by the county). Released inmates are removed from the feed automatically.</p>
+    <p data-i18n="footNote">Not an official county website. Verify with the Starr County Sheriff's Office at (956) 487-5571 before acting on this information.</p>
+    <p class="mut"><span data-i18n="footApi">Data API</span>: <code id="apiUrl"></code> · <a href="https://github.com/jlaiii/starr-county-webjail-api" target="_blank" rel="noopener">github.com/jlaiii/starr-county-webjail-api</a></p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

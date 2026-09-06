@@ -1,0 +1,94 @@
+/* Starr County Jail Roster — modern, mobile-first */
+:root{
+  --bg:#f1f5f9; --card:#ffffff; --ink:#0f172a; --mut:#64748b; --line:#e2e8f0;
+  --acc:#1d4ed8; --acc2:#3b82f6; --good:#16a34a; --warn:#d97706; --bad:#dc2626;
+  --shadow:0 1px 2px rgba(15,23,42,.06),0 8px 24px -12px rgba(15,23,42,.18);
+  --r:16px;
+}
+@media (prefers-color-scheme:dark){
+  :root{ --bg:#0b1220; --card:#111a2e; --ink:#e6edf7; --mut:#8fa0b8; --line:#1e2a44;
+    --acc:#60a5fa; --acc2:#3b82f6; --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -12px rgba(0,0,0,.6); }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+button{font:inherit;cursor:pointer}
+.hero{background:linear-gradient(135deg,#0f172a 0%,#1e3a8a 55%,#1d4ed8 100%);color:#fff;
+  padding:22px 16px 0;position:sticky;top:0;z-index:5;box-shadow:var(--shadow)}
+.hero-inner{max-width:1100px;margin:0 auto;display:flex;justify-content:space-between;
+  gap:12px;align-items:flex-start;flex-wrap:wrap}
+.brand{display:flex;gap:12px;align-items:center;min-width:0}
+.logo{font-size:34px;line-height:1}
+h1{margin:0;font-size:clamp(19px,4.5vw,26px);font-weight:800;letter-spacing:-.02em}
+.sub{margin:2px 0 0;font-size:13px;opacity:.85}
+.hero-actions{display:flex;gap:8px;align-items:center;flex-shrink:0}
+.chip{border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.12);
+  color:#fff;border-radius:999px;padding:7px 14px;font-size:13px;font-weight:600;
+  text-decoration:none;backdrop-filter:blur(4px)}
+.chip:hover{background:rgba(255,255,255,.22)}
+.chip.ghost{background:transparent}
+.statusbar{max-width:1100px;margin:14px auto 0;padding:9px 4px 10px;font-size:12.5px;
+  color:#cfe0ff;display:flex;gap:8px;align-items:center;border-top:1px solid rgba(255,255,255,.14)}
+.dot{width:9px;height:9px;border-radius:50%;background:#f59e0b;flex-shrink:0}
+.dot.ok{background:#4ade80}.dot.err{background:#f87171}
+.wrap{max-width:1100px;margin:0 auto;padding:16px}
+.controls{display:flex;flex-direction:column;gap:10px;margin:4px 0 14px}
+#q{width:100%;padding:13px 16px;border-radius:14px;border:1px solid var(--line);
+  background:var(--card);color:var(--ink);font-size:16px;box-shadow:var(--shadow);outline:none}
+#q:focus{border-color:var(--acc);box-shadow:0 0 0 3px color-mix(in srgb,var(--acc) 22%,transparent)}
+.control-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+select{flex:1;min-width:150px;max-width:260px;padding:10px 12px;border-radius:12px;
+  border:1px solid var(--line);background:var(--card);color:var(--ink);font-size:14px}
+.btn{background:var(--acc);color:#fff;border:0;border-radius:12px;padding:10px 18px;
+  font-weight:700;font-size:14px}
+.btn:hover{filter:brightness(1.1)}
+.progress{min-height:1.4em;margin:0 0 10px;font-size:13px;color:var(--mut);text-align:center}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+  box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column;
+  transition:transform .15s ease, box-shadow .15s ease;text-align:left;padding:0}
+.card:hover{transform:translateY(-2px);box-shadow:0 12px 32px -12px rgba(15,23,42,.35)}
+.card .thumb{width:100%;aspect-ratio:4/3.4;object-fit:cover;background:#cbd5e1;display:block}
+.card .av{width:100%;aspect-ratio:4/3.4;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#334155,#475569);font-size:52px;color:#fff}
+.card .cbody{padding:11px 13px 13px;display:flex;flex-direction:column;gap:3px;min-width:0}
+.cname{font-weight:750;font-size:15.5px;letter-spacing:-.01em;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.cmeta{font-size:12.5px;color:var(--mut);display:flex;flex-wrap:wrap;gap:4px 10px}
+.badge{display:inline-block;font-size:11px;font-weight:700;border-radius:999px;
+  padding:2px 9px;margin-left:auto}
+.badge.withheld{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
+.empty{text-align:center;color:var(--mut);padding:44px 10px;font-size:15px}
+.foot{max-width:1100px;margin:26px auto 0;padding:22px 18px 40px;border-top:1px solid var(--line);
+  font-size:13px;color:var(--mut)}
+.foot p{margin:6px 0}
+.foot code{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:1px 6px;font-size:12px}
+a{color:var(--acc)}
+/* modal */
+.modal{position:fixed;inset:0;background:rgba(2,6,23,.6);display:flex;align-items:flex-end;
+  justify-content:center;z-index:20;backdrop-filter:blur(3px)}
+@media (min-width:640px){.modal{align-items:center;padding:20px}}
+.sheet{background:var(--card);width:100%;max-width:560px;max-height:92dvh;overflow:auto;
+  border-radius:20px 20px 0 0;padding:18px;position:relative;box-shadow:0 -8px 40px rgba(0,0,0,.35)}
+@media (min-width:640px){.sheet{border-radius:20px}}
+.close{position:absolute;top:12px;right:12px;width:36px;height:36px;border-radius:50%;
+  border:0;background:color-mix(in srgb,var(--ink) 8%,transparent);color:var(--ink);
+  font-size:15px;font-weight:700;z-index:2}
+.mimg{width:100%;max-height:340px;object-fit:contain;border-radius:14px;
+  background:#0f172a;margin-bottom:12px}
+.mhead h2{margin:0 0 2px;font-size:21px;letter-spacing:-.01em}
+.mut{color:var(--mut);font-size:13px;margin:2px 0}
+.mbody{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.srow{display:flex;justify-content:space-between;gap:14px;padding:7px 2px;
+  border-bottom:1px dashed var(--line);font-size:14px}
+.srow b{text-align:right}
+.charges{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.charge{background:color-mix(in srgb,var(--acc) 5%,var(--card));border:1px solid var(--line);
+  border-radius:12px;padding:10px 12px}
+.charge .d{font-weight:650;font-size:14px}
+.charge .x{font-size:12px;color:var(--mut);display:flex;gap:8px;flex-wrap:wrap;margin-top:3px}
+.denied{color:var(--bad);font-weight:700}
+.skel{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.skel .b{height:150px;background:linear-gradient(90deg,var(--card),color-mix(in srgb,var(--ink) 6%,var(--card)),var(--card));background-size:200% 100%;animation:sh 1.2s infinite}
+@keyframes sh{to{background-position:-200% 0}}

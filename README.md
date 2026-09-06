@@ -1,4 +1,20 @@
-# Starr County (TX) Jail — Public Webjail Booking API
+# Starr County (TX) Jail — Inmate Roster & Public Webjail Booking API
+
+[![Live demo](https://img.shields.io/badge/LIVE%20demo-GitHub%20Pages-1d4ed8)](https://jlaiii.github.io/starr-county-webjail-api/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
+**Live inmate roster & lookup for Starr County Jail, Rio Grande City, Texas**
+— search current inmates by name or booking number, view mugshots, charges,
+bonds and booking dates, with data pulled **directly from the county's public
+Webjail feed** (updated hourly).
+
+- 🌐 **Use it live**: <https://jlaiii.github.io/starr-county-webjail-api/>
+- 📚 **API field guide** (for developers *and* AI agents): see [`docs/`](docs/)
+- 💻 **Working code**: see [`examples/`](examples/)
+
+The county publishes no roster page on its own website — its booking system
+feeds this public Webjail API, which is what this project documents, mirrors,
+and turns into a friendly lookup UI.
 
 A reverse-engineered field guide, reference documentation, and working code
 for the **read-only public API** behind Starr County, Texas's jail roster
@@ -11,6 +27,20 @@ observation. Treat field names/behaviors as stable-but-unconfirmed.
 > Written primarily for **AI agents** that need to integrate with this API
 > fast and correctly. Start with [`docs/05-pitfalls-for-agents.md`](docs/05-pitfalls-for-agents.md),
 > then read the other docs in order. Copy-paste code lives in [`examples/`](examples/).
+
+## Live demo (GitHub Pages)
+
+The [`web/`](web/) folder is a self-contained, mobile-friendly web app that
+queries the county API straight from the browser (the API sends permissive
+CORS headers). No server needed.
+
+- Search by name or booking number (client-side — the API ignores filters)
+- Sort: newest booking / name / booked date
+- Tap any inmate for details + charges (`/inmate-detail`)
+- English 🇺🇸 / Español 🇲🇽 toggle, dark mode, mobile-first
+
+Run it locally: `cd web && python3 -m http.server 8000` → <http://localhost:8000>
+or open `web/index.html` directly.
 
 ## Quick facts
 
@@ -55,6 +85,8 @@ print(roster["total"], "in custody; newest:", roster["data"][0]["FirstName"], ro
 ## Repo map
 
 ```
+web/
+  index.html / styles.css / app.js    self-contained lookup app (GitHub Pages)
 docs/
   01-endpoints.md              every endpoint, verbs, statuses, envelopes
   02-data-model.md             field dictionaries, types, enums (as observed)
