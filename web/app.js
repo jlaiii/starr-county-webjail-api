@@ -128,7 +128,9 @@ function bookedPhrase(s) {
   const p = parseDate(s);
   if (!p) return dateOnly(s);
   const now = new Date();
-  const z = typeof s === "string" && /(Z|[+-]\d{2}:?\d{2})$/.test(s.trim());
+  const s0 = s.trim();
+  const midnight = /^.*T00:00(:00(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})?$/.test(s0);
+  const z = !midnight && /(Z|[+-]\d{2}:?\d{2})$/.test(s0);  // midnight = plain calendar date (county local)
   const ref = z
     ? { y: now.getUTCFullYear(), mo: now.getUTCMonth() + 1, d: now.getUTCDate() }
     : { y: now.getFullYear(), mo: now.getMonth() + 1, d: now.getDate() };
