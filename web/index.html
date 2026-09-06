@@ -50,9 +50,14 @@
   </header>
 
   <main class="wrap">
+    <nav class="tabs" aria-label="Views">
+      <button id="tabInmates" class="tabbtn active" type="button" data-i18n="tabInmates">Inmates</button>
+      <button id="tabPhotos" class="tabbtn" type="button" data-i18n="tabPhotos">Photos</button>
+    </nav>
+
     <section class="controls" aria-label="Search and filter">
       <input id="q" type="search" inputmode="search" autocomplete="off"
-             placeholder="Search name or booking #…" data-i18n-ph="searchPh">
+             placeholder="Search name, booking # or charge…" data-i18n-ph="searchPh">
       <div class="control-row">
         <select id="sortSel" aria-label="Sort">
           <option value="newest" data-i18n="sortNewest">Newest booking</option>
@@ -64,10 +69,29 @@
 
     <p id="progress" class="progress" role="status"></p>
     <div id="grid" class="grid" aria-live="polite"></div>
+    <div id="photogrid" class="photogrid" style="display:none" aria-live="polite"></div>
     <div id="empty" class="empty" style="display:none">
       <p data-i18n="noResults">No inmates match your search.</p>
     </div>
   </main>
+
+  <!-- photo lightbox -->
+  <div id="lightbox" class="lightbox" role="dialog" aria-modal="true" style="display:none">
+    <div class="lbox">
+      <button id="lbClose" class="close light" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor"
+             stroke-width="2.6" stroke-linecap="round" aria-hidden="true">
+          <path d="M6 6l12 12M18 6L6 18"/>
+        </svg>
+      </button>
+      <img id="lbImg" alt="">
+      <div class="lcap">
+        <b id="lbName"></b>
+        <span id="lbMeta" class="mut"></span>
+      </div>
+      <button id="lbFile" class="btn" type="button" data-i18n="viewFile">View file</button>
+    </div>
+  </div>
 
   <!-- detail modal -->
   <div id="modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="mName" style="display:none">

@@ -1,7 +1,8 @@
 /* Starr County Jail Roster — live lookup app.
    Loads data.json (mirrored hourly from the county's public Webjail API by
    GitHub Actions) from the same origin — no CORS relay, no runtime county
-   calls. Mugshots are individual files loaded lazily. See tools/mirror.py. */
+   calls. Two views: inmate cards + photo grid; each inmate file shows
+   charges up top. See tools/mirror.py. */
 "use strict";
 
 const L = {
@@ -10,38 +11,44 @@ const L = {
     statusInit: "Loading roster…",
     statusOk: n => `${n} in custody`,
     statusErr: "Couldn't load the roster. The mirror updates hourly — try again in a moment.",
-    retry: "Try again", searchPh: "Search name or booking #…",
+    retry: "Try again", searchPh: "Search name, booking # or charge…",
     noResults: "No inmates match your search.",
     sortNewest: "Newest booking", sortName: "Name A–Z", sortDate: "Booked date",
     updatedAgo: m => m < 60 ? `Updated ${m}m ago` : `Updated ${Math.floor(m / 60)}h ${m % 60}m ago`,
     booked: "Booked", withheld: "Photo withheld",
-    charges: "Charges", bond: "Bond", denied: "Bond denied", level: "Level",
+    charges: "Charges", charge: "Charge", bond: "Bond", denied: "Bond denied", level: "Level",
     agency: "Agency", arrested: "Arrested", dob: "DOB", gender: "Gender", race: "Race",
     height: "Height", weight: "Weight", booking: "Booking", subject: "Subject",
-    noCharges: "No charges listed.", stay: "In custody since",
+    eye: "Eyes", hair: "Hair",
+    noCharges: "No charges listed.", totalBond: "Total bond", stay: "In custody since",
+    tabInmates: "Inmates", tabPhotos: "Photos", viewFile: "View file",
+    photosOf: n => `${n} photos`,
     footTitle: "About this site",
     footData: "Data is mirrored every hour from the Starr County jail system's public Webjail feed. Released inmates are removed from the feed automatically, so they disappear from this roster too.",
     footNote: "Not an official county website. Verify with the Starr County Sheriff's Office at (956) 487-5571 before acting on this information.",
-    viewCode: "View code", close: "Close", live: "Hourly mirror · updated"
+    live: "Hourly mirror · updated"
   },
   es: {
     title: "Lista de Presos — Condado de Starr", subtitle: "Consulta de presos e ingresos en vivo — Rio Grande City, TX",
     statusInit: "Cargando lista…",
     statusOk: n => `${n} en custodia`,
     statusErr: "No se pudo cargar la lista. El espejo se actualiza cada hora — intenta de nuevo en un momento.",
-    retry: "Reintentar", searchPh: "Buscar nombre o # de ingreso…",
+    retry: "Reintentar", searchPh: "Buscar nombre, # de ingreso o cargo…",
     noResults: "Ningún preso coincide con tu búsqueda.",
     sortNewest: "Ingreso más reciente", sortName: "Nombre A–Z", sortDate: "Fecha de ingreso",
     updatedAgo: m => m < 60 ? `Actualizado hace ${m} min` : `Actualizado hace ${Math.floor(m / 60)}h ${m % 60} min`,
     booked: "Ingresado", withheld: "Foto no publicada",
-    charges: "Cargos", bond: "Fianza", denied: "Fianza denegada", level: "Nivel",
+    charges: "Cargos", charge: "Cargo", bond: "Fianza", denied: "Fianza denegada", level: "Nivel",
     agency: "Agencia", arrested: "Arrestado", dob: "Nacimiento", gender: "Género", race: "Raza",
     height: "Estatura", weight: "Peso", booking: "Ingreso", subject: "Sujeto",
-    noCharges: "No hay cargos registrados.", stay: "En custodia desde",
+    eye: "Ojos", hair: "Cabello",
+    noCharges: "No hay cargos registrados.", totalBond: "Fianza total", stay: "En custodia desde",
+    tabInmates: "Presos", tabPhotos: "Fotos", viewFile: "Ver ficha",
+    photosOf: n => `${n} fotos`,
     footTitle: "Acerca de este sitio",
     footData: "Los datos se reflejan cada hora desde el sistema público Webjail del condado de Starr. Los liberados se eliminan automáticamente del sistema, así que desaparecen de esta lista también.",
     footNote: "Este no es un sitio oficial del condado. Verifica con la Oficina del Sheriff del Condado de Starr al (956) 487-5571 antes de actuar con esta información.",
-    viewCode: "Ver código", close: "Cerrar", live: "Espejo horario · actualizado"
+    live: "Espejo horario · actualizado"
   }
 };
 let lang = (navigator.language || "en").toLowerCase().startsWith("es") ? "es" : "en";
@@ -50,7 +57,7 @@ const t = k => typeof L[lang][k] === "function" ? L[lang][k] : L[lang][k] || k;
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
-const state = { records: [], loadedAt: null, q: "", err: false };
+const state = { records: [], loadedAt: null, q: "", err: false, view: "inmates" };
 
 function nameOf(r) { return r.name || [r.FirstName, r.MiddleName, r.LastName].filter(Boolean).join(" "); }
 function initials(name) {
@@ -79,6 +86,12 @@ function money(v) {
   if (v == null || v === "") return null;
   const n = Number(v);
   return Number.isFinite(n) ? "$" + n.toLocaleString("en-US") : null;
+}
+function chargeText(r) {
+  return (r.charges || []).map(c => [c.desc, c.level, c.agency].filter(Boolean).join(" ")).join(" ");
+}
+function totalBond(r) {
+  return (r.charges || []).reduce((s, c) => s + (Number(c.bond) || 0), 0) || null;
 }
 
 /* ---------- data (same-origin mirror) ---------- */
@@ -109,12 +122,14 @@ function tickClock() {
   if (el) el.textContent = `${t("live")} ${t("updatedAgo")(m)}`;
 }
 
-/* ---------- rendering ---------- */
+/* ---------- filtering / sorting (client-side; API has no search) ---------- */
+function haystack(r) {
+  return (nameOf(r) + " " + (r.bookingID || "") + " " + (r.ptsBookingID ?? "") + " " + chargeText(r)).toLowerCase();
+}
 function filtered() {
   const q = state.q.trim().toLowerCase();
   let list = state.records;
-  if (q) list = list.filter(r =>
-    (nameOf(r) + " " + (r.bookingID || "") + " " + (r.ptsBookingID ?? "")).toLowerCase().includes(q));
+  if (q) list = list.filter(r => haystack(r).includes(q));
   const sort = $("#sortSel").value;
   const sorter = {
     newest: (a, b) => String(b.bookingID || "").localeCompare(String(a.bookingID || "")),
@@ -123,20 +138,45 @@ function filtered() {
   }[sort] || (() => 0);
   return list.slice().sort(sorter);
 }
+
+/* ---------- rendering ---------- */
 function applyFilters() {
   const list = filtered();
-  $("#empty").style.display = list.length ? "none" : "block";
-  render(list);
+  const photoList = list.filter(r => r.img && r.imgPub !== false);
+  const empty = state.view === "photos" ? photoList.length === 0 : list.length === 0;
+  $("#empty").style.display = empty ? "block" : "none";
+  if (state.view === "photos") renderPhotos(photoList);
+  else renderCards(list);
+  updateCounts();
   setStatus("statusOk", state.records.length, "ok");
   tickClock();
+}
+function updateCounts() {
+  const photos = state.records.filter(r => r.img && r.imgPub !== false).length;
+  const tb = $("#tabPhotos");
+  if (tb && !tb.querySelector(".phcount")) tb.appendChild(Object.assign(document.createElement("span"), { className: "phcount" }));
+  const c = tb.querySelector(".phcount");
+  if (c) c.textContent = ` (${photos})`;
+  const ti = $("#tabInmates");
+  if (ti) ti.dataset.count = state.records.length;
+}
+function renderCards(list) {
+  $("#photogrid").style.display = "none";
+  $("#grid").style.display = "grid";
+  $("#grid").innerHTML = list.map(cardHTML).join("") ||
+    `<div class="empty" style="display:block"><p>${esc(t("noResults"))}</p></div>`;
 }
 function cardHTML(r) {
   const a = age(r.dob);
   const init = initials(nameOf(r));
-  const thumb = r.img
+  const thumb = r.img && r.imgPub !== false
     ? `<img class="thumb" loading="lazy" src="${esc(r.img)}" data-init="${esc(init)}" alt="Mugshot of ${esc(nameOf(r))}" onerror="avFail(this)">`
     : `<span class="av" aria-hidden="true">${esc(init)}</span>`;
-  const badge = r.imgPub === false ? `<span class="badge withheld">${esc(t("withheld"))}</span>` : "";
+  const ch = r.charges || [];
+  const chLine = ch.length
+    ? `<span class="cmeta chg"><span>${esc(t("charges"))}: ${ch.length}</span>` +
+      (ch[0].desc ? `<span class="ellip">${esc(ch[0].desc)}${ch.length > 1 ? " +" + (ch.length - 1) : ""}</span>` : "") + `</span>`
+    : `<span class="cmeta chg">${esc(t("noCharges"))}</span>`;
   return `<button type="button" class="card" data-pid="${esc(r.ptsBookingID)}">
     ${thumb}
     <div class="cbody">
@@ -146,15 +186,23 @@ function cardHTML(r) {
         <span>· ${esc(t("booked"))} ${esc(dateOnly(r.booked))}</span>
         ${a != null ? `<span>· ${a} ${lang === "es" ? "años" : "yrs"}</span>` : ""}
       </span>
-      <span class="cmeta">${esc(r.gender || "")}${r.race ? " · " + esc(r.race) : ""}${badge}</span>
+      ${chLine}
+      <span class="cmeta">${esc(r.gender || "")}${r.race ? " · " + esc(r.race) : ""}
+        ${r.imgPub === false ? `<span class="badge withheld">${esc(t("withheld"))}</span>` : ""}</span>
     </div>
   </button>`;
 }
-function render(list) {
-  $("#grid").innerHTML = list.map(cardHTML).join("") ||
-    `<div class="empty" style="display:block"><p>${esc(t("noResults"))}</p></div>`;
+function renderPhotos(list) {
+  $("#grid").style.display = "none";
+  $("#photogrid").style.display = "grid";
+  $("#photogrid").innerHTML = list.length ? list.map(p => `
+    <button type="button" class="ptile" data-pid="${esc(p.ptsBookingID)}" title="${esc(nameOf(p))}">
+      <img loading="lazy" src="${esc(p.img)}" alt="Mugshot of ${esc(nameOf(p))}">
+    </button>`).join("") : "";
 }
 function skeletons(n) {
+  $("#grid").style.display = "grid";
+  $("#photogrid").style.display = "none";
   $("#grid").innerHTML = Array.from({ length: n },
     () => `<div class="skel"><div class="b"></div></div>`).join("");
 }
@@ -166,7 +214,15 @@ function setStatus(kind, n, cls) {
   $("#statusDot").className = "dot" + (cls ? " " + cls : "");
 }
 
-/* ---------- detail modal ---------- */
+/* ---------- views ---------- */
+function switchView(v) {
+  state.view = v;
+  $("#tabInmates").classList.toggle("active", v === "inmates");
+  $("#tabPhotos").classList.toggle("active", v === "photos");
+  applyFilters();
+}
+
+/* ---------- detail modal (the inmate file) ---------- */
 function openDetail(pid) {
   const r = state.records.find(x => String(x.ptsBookingID) === String(pid));
   if (!r) return;
@@ -178,18 +234,13 @@ function openDetail(pid) {
   const meta = [`#${r.bookingID}`, `${t("booked")} ${dateOnly(r.booked)}`,
     r.gender && r.race ? `${r.gender} · ${r.race}` : (r.gender || r.race || "")].filter(Boolean).join(" · ");
   $("#mMeta").textContent = meta;
+
   const ch = r.charges || [];
-  $("#mBody").innerHTML =
-    row(t("stay"), dateOnly(r.booked)) +
-    (a != null ? row(t("dob"), `${dateOnly(r.dob)} (${a})`) : "") +
-    row(t("gender"), esc(r.gender || "—")) +
-    row(t("race"), esc(r.race || "—")) +
-    (r.height ? row(t("height"), esc(r.height)) : "") +
-    (r.weight != null ? row(t("weight"), r.weight + " lbs") : "") +
-    row(t("booking"), esc(r.bookingID)) +
-    (r.ptsSubjectID != null ? row(t("subject"), r.ptsSubjectID) : "") +
-    `<div class="srow"><span>${esc(t("charges"))}</span><b>${ch.length}</b></div>
-     <div class="charges">` +
+  const tb = totalBond(r);
+  const chHead = `<div class="srow"><span><b>${esc(t("charges"))} (${ch.length})</b></span>` +
+    (tb ? `<b class="bondtot">${esc(t("totalBond"))}: ${money(tb)}</b>` : `<b>—</b>`) + `</div>`;
+  $("#mBody").innerHTML = chHead +
+    `<div class="charges">` +
     (ch.length ? ch.map(o => {
       const b = money(o.bond);
       return `<div class="charge"><div class="d">${esc(o.desc || "—")}</div>
@@ -201,13 +252,40 @@ function openDetail(pid) {
           ${o.arrested ? `<span>${esc(t("arrested"))} ${esc(dateOnly(o.arrested))}</span>` : ""}
         </div></div>`;
     }).join("") : `<span class="mut">${esc(t("noCharges"))}</span>`) +
-    `</div>`;
+    `</div>` +
+    `<div class="dets">
+      ${a != null ? row(t("dob"), `${dateOnly(r.dob)} (${a})`) : ""}
+      ${r.height ? row(t("height"), esc(r.height)) : ""}
+      ${r.weight != null ? row(t("weight"), r.weight + " lbs") : ""}
+      ${r.eye ? row(t("eye"), esc(r.eye)) : ""}
+      ${r.hair ? row(t("hair"), esc(r.hair)) : ""}
+      ${row(t("booking"), esc(r.bookingID))}
+      ${r.ptsSubjectID != null ? row(t("subject"), r.ptsSubjectID) : ""}
+    </div>`;
   $("#modal").style.display = "flex";
   document.body.style.overflow = "hidden";
 }
 function row(k, v) { return `<div class="srow"><span>${esc(k)}</span><b>${v}</b></div>`; }
 function closeModal() {
   $("#modal").style.display = "none";
+  document.body.style.overflow = "";
+}
+
+/* ---------- lightbox (photo view) ---------- */
+function openLightbox(pid) {
+  const r = state.records.find(x => String(x.ptsBookingID) === String(pid));
+  if (!r || !r.img) return;
+  $("#lbImg").src = r.img;
+  $("#lbName").textContent = nameOf(r);
+  const a = age(r.dob);
+  $("#lbMeta").textContent = `#${r.bookingID} · ${t("booked")} ${dateOnly(r.booked)}` +
+    (a != null ? ` · ${a} ${lang === "es" ? "años" : "yrs"}` : "") +
+    ` · ${esc(t("charges"))}: ${(r.charges || []).length}`;
+  $("#lightbox").style.display = "flex";
+  document.body.style.overflow = "hidden";
+}
+function closeLightbox() {
+  $("#lightbox").style.display = "none";
   document.body.style.overflow = "";
 }
 
@@ -223,6 +301,7 @@ function applyLang() {
     const k = el.dataset.i18nPh;
     if (L[lang][k]) el.placeholder = L[lang][k];
   });
+  updateCounts();
 }
 
 /* ---------- init ---------- */
@@ -233,17 +312,38 @@ function init() {
   setInterval(tickClock, 60000);
 
   $("#langBtn").onclick = () => { lang = lang === "en" ? "es" : "en"; applyLang(); applyFilters(); };
+  $("#tabInmates").onclick = () => switchView("inmates");
+  $("#tabPhotos").onclick = () => switchView("photos");
   $("#q").addEventListener("input", e => {
     clearTimeout(deb);
     deb = setTimeout(() => { state.q = e.target.value; applyFilters(); }, 200);
   });
   $("#sortSel").onchange = () => applyFilters();
   $("#mClose").onclick = closeModal;
+  $("#lbClose").onclick = closeLightbox;
+  $("#lbFile").onclick = () => {
+    const pid = $("#lbFile").dataset.pid;
+    closeLightbox();
+    if (pid) openDetail(pid);
+  };
   $("#modal").addEventListener("click", e => { if (e.target === $("#modal")) closeModal(); });
-  document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
+  $("#lightbox").addEventListener("click", e => { if (e.target === $("#lightbox")) closeLightbox(); });
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape") {
+      if ($("#lightbox").style.display !== "none") closeLightbox();
+      else closeModal();
+    }
+  });
   $("#grid").addEventListener("click", e => {
     const card = e.target.closest(".card");
     if (card) openDetail(card.dataset.pid);
+  });
+  $("#photogrid").addEventListener("click", e => {
+    const tile = e.target.closest(".ptile");
+    if (tile) {
+      $("#lbFile").dataset.pid = tile.dataset.pid;
+      openLightbox(tile.dataset.pid);
+    }
   });
 }
 document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", init) : init();
