@@ -91,7 +91,9 @@ function chargeText(r) {
   return (r.charges || []).map(c => [c.desc, c.level, c.agency].filter(Boolean).join(" ")).join(" ");
 }
 function totalBond(r) {
-  return (r.charges || []).reduce((s, c) => s + (Number(c.bond) || 0), 0) || null;
+  const ch = r.charges || [];
+  if (!ch.some(c => c.bond != null && c.bond !== "")) return null;  // no bonds set
+  return ch.reduce((s, c) => s + (Number(c.bond) || 0), 0);
 }
 
 /* ---------- data (same-origin mirror) ---------- */
