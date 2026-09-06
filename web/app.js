@@ -25,6 +25,7 @@ const L = {
     sumWomen: n => `Women: ${n}`, sumPhotos: n => `Photos: ${n}`,
     updatedAgo: m => m < 60 ? `Updated ${m}m ago` : `Updated ${Math.floor(m / 60)}h ${m % 60}m ago`,
     booked: "Booked", withheld: "Photo withheld",
+    bToday: "today", bYesterday: "yesterday", bDaysAgo: n => `${n} days ago`,
     charges: "Charges", charge: "Charge", bond: "Bond", denied: "Bond denied", level: "Level",
     agency: "Agency", arrested: "Arrested", dob: "DOB", gender: "Gender", race: "Race",
     height: "Height", weight: "Weight", booking: "Booking", subject: "Subject",
@@ -56,6 +57,7 @@ const L = {
     sumWomen: n => `Mujeres: ${n}`, sumPhotos: n => `Fotos: ${n}`,
     updatedAgo: m => m < 60 ? `Actualizado hace ${m} min` : `Actualizado hace ${Math.floor(m / 60)}h ${m % 60} min`,
     booked: "Ingresado", withheld: "Foto no publicada",
+    bToday: "hoy", bYesterday: "ayer", bDaysAgo: n => `hace ${n} días`,
     charges: "Cargos", charge: "Cargo", bond: "Fianza", denied: "Fianza denegada", level: "Nivel",
     agency: "Agencia", arrested: "Arrestado", dob: "Nacimiento", gender: "Género", race: "Raza",
     height: "Estatura", weight: "Peso", booking: "Ingreso", subject: "Sujeto",
@@ -118,6 +120,23 @@ function age(dob) {
   let a = n.getFullYear() - +p.y;
   if (n.getMonth() + 1 < p.mo || (n.getMonth() + 1 === p.mo && n.getDate() < p.d)) a--;
   return a >= 0 ? a : null;
+}
+/* "Booked today / yesterday / 3 days ago" — absolute date past 6 days.
+   Timezone-aware: dates stored as ...Z compare against UTC calendar,
+   plain dates compare against the local calendar. */
+function bookedPhrase(s) {
+  const p = parseDate(s);
+  if (!p) return dateOnly(s);
+  const now = new Date();
+  const z = typeof s === "string" && /(Z|[+-]\d{2}:?\d{2})$/.test(s.trim());
+  const ref = z
+    ? { y: now.getUTCFullYear(), mo: now.getUTCMonth() + 1, d: now.getUTCDate() }
+    : { y: now.getFullYear(), mo: now.getMonth() + 1, d: now.getDate() };
+  const days = Math.round((Date.UTC(+ref.y, ref.mo - 1, ref.d) - Date.UTC(+p.y, p.mo - 1, p.d)) / 864e5);
+  if (days === 0) return t("bToday");
+  if (days === 1) return t("bYesterday");
+  if (days > 1 && days <= 6) return t("bDaysAgo")(days);
+  return dateOnly(s);
 }
 function money(v) {
   if (v == null || v === "") return null;
@@ -243,7 +262,7 @@ function cardHTML(r) {
       <span class="cname">${esc(nameOf(r))}</span>
       <span class="cmeta">
         <span>#${esc(r.bookingID)}</span>
-        <span>· ${esc(t("booked"))} ${esc(dateOnly(r.booked))}</span>
+        <span>· ${esc(t("booked"))} ${esc(bookedPhrase(r.booked))}</span>
         ${a != null ? `<span>· ${a} ${lang === "es" ? "años" : "yrs"}</span>` : ""}
       </span>
       ${chLine}
@@ -291,7 +310,7 @@ function openDetail(pid) {
   $("#mImg").hidden = !img;
   if (img) { $("#mImg").src = r.img; $("#mImg").onerror = () => { $("#mImg").hidden = true; }; }
   $("#mName").textContent = nameOf(r);
-  const meta = [`#${r.bookingID}`, `${t("booked")} ${dateOnly(r.booked)}`,
+  const meta = [`#${r.bookingID}`, `${t("booked")} ${bookedPhrase(r.booked)}`,
     r.gender && r.race ? `${r.gender} · ${r.race}` : (r.gender || r.race || "")].filter(Boolean).join(" · ");
   $("#mMeta").textContent = meta;
 
@@ -338,7 +357,7 @@ function openLightbox(pid) {
   $("#lbImg").src = r.img;
   $("#lbName").textContent = nameOf(r);
   const a = age(r.dob);
-  $("#lbMeta").textContent = `#${r.bookingID} · ${t("booked")} ${dateOnly(r.booked)}` +
+  $("#lbMeta").textContent = `#${r.bookingID} · ${t("booked")} ${bookedPhrase(r.booked)}` +
     (a != null ? ` · ${a} ${lang === "es" ? "años" : "yrs"}` : "") +
     ` · ${esc(t("charges"))}: ${(r.charges || []).length}`;
   $("#lightbox").style.display = "flex";
