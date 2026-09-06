@@ -240,7 +240,7 @@ function openDetail(pid) {
   const ch = r.charges || [];
   const tb = totalBond(r);
   const chHead = `<div class="srow"><span><b>${esc(t("charges"))} (${ch.length})</b></span>` +
-    (tb ? `<b class="bondtot">${esc(t("totalBond"))}: ${money(tb)}</b>` : `<b>—</b>`) + `</div>`;
+    (tb != null ? `<b class="bondtot">${esc(t("totalBond"))}: ${money(tb)}</b>` : `<b>—</b>`) + `</div>`;
   $("#mBody").innerHTML = chHead +
     `<div class="charges">` +
     (ch.length ? ch.map(o => {
