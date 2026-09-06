@@ -125,3 +125,61 @@ a{color:var(--acc)}
 .skel{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
 .skel .b{height:150px;background:linear-gradient(90deg,var(--card),color-mix(in srgb,var(--ink) 6%,var(--card)),var(--card));background-size:200% 100%;animation:sh 1.2s infinite}
 @keyframes sh{to{background-position:-200% 0}}
+
+/* ===== compact + modern polish (Sep 2026) ===== */
+.hero{padding:12px 16px 0}
+.hero-inner{gap:10px}
+.logo{width:27px;height:27px}
+h1{font-size:clamp(17px,4vw,21px)}
+.sub{font-size:12px}
+.hero-actions .chip{padding:5px 12px;font-size:12.5px}
+.statusbar{margin:8px auto 0;padding:6px 4px 8px;font-size:12px}
+.dot{width:8px;height:8px}
+.sumstrip{display:flex;gap:8px;flex-wrap:wrap;margin-top:2px}
+.sumchip{font-size:12px;font-weight:650;color:var(--mut);
+  background:color-mix(in srgb,var(--acc) 7%,var(--card));
+  border:1px solid var(--line);border-radius:999px;padding:4px 12px}
+.tabs{margin:10px 0 12px}
+.tabbtn{padding:6px 15px;font-size:13.5px}
+#q{padding:12px 16px;border-radius:13px;font-size:15px;box-shadow:0 1px 2px rgba(15,23,42,.05)}
+select{flex:1 1 150px;max-width:240px;padding:9px 11px;border-radius:11px;font-size:13.5px}
+.control-row{gap:8px}
+.grid{gap:14px}
+.card{border-radius:17px;transition:transform .16s ease,box-shadow .16s ease, border-color .16s ease}
+.card:active{transform:scale(.985)}
+.card:focus-visible,.tabbtn:focus-visible,#q:focus-visible,
+select:focus-visible,.btn:focus-visible,.ptile:focus-visible{outline:2px solid var(--acc);
+  outline-offset:2px}
+.card .thumb{aspect-ratio:16/13;background:#0f172a}
+.card .av{aspect-ratio:16/13;background:linear-gradient(135deg,#2b3a55,#3d506e);
+  font-size:30px;letter-spacing:.06em}
+.cbody{padding:11px 14px 14px}
+.cname{font-size:16px;font-weight:800}
+.cmeta{font-size:12.5px}
+.cmeta.chg{margin-top:5px;color:var(--acc);font-weight:650;
+  background:color-mix(in srgb,var(--acc) 8%,transparent);
+  border-radius:8px;padding:3px 9px;display:flex;gap:7px;align-items:baseline}
+.card:hover .cname{color:var(--acc)}
+.badge.withheld{margin-left:6px}
+.photogrid{gap:10px}
+.ptile{border-radius:13px;aspect-ratio:1/1}
+.ptile img{transition:transform .2s ease,opacity .2s ease}
+.btn{border-radius:11px;padding:9px 17px;font-size:13.5px}
+.btn:active{transform:scale(.97)}
+#progress{font-size:12.5px}
+.mimg{max-height:300px;border-radius:12px}
+.sheet{border-radius:22px 22px 0 0;padding:20px}
+@media (min-width:640px){.sheet{border-radius:22px}}
+.mhead h2{font-size:22px}
+.charge{border-radius:13px}
+.empty svg{display:none}
+body{background:
+  radial-gradient(900px 420px at 85% -10%,color-mix(in srgb,var(--acc) 9%,transparent),transparent),
+  radial-gradient(700px 380px at -10% 0%,color-mix(in srgb,var(--acc2) 8%,transparent),transparent),
+  var(--bg)}
+.hero{background:linear-gradient(135deg,#0b1220 0%,#172554 60%,#1e3a8a 100%)}
+select,.tabbtn,.sumchip,.close{transition:background .15s ease,color .15s ease,border-color .15s ease}
+::selection{background:color-mix(in srgb,var(--acc) 30%,transparent)}
+#q::placeholder{color:var(--mut)}
+.lightbox{background:rgba(3,7,18,.94)}
+#lbImg{border-radius:12px;box-shadow:0 18px 60px -18px rgba(0,0,0,.7)}

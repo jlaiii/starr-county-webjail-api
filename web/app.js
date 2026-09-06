@@ -14,6 +14,11 @@ const L = {
     retry: "Try again", searchPh: "Search name, booking # or charge…",
     noResults: "No inmates match your search.",
     sortNewest: "Newest booking", sortName: "Name A–Z", sortDate: "Booked date",
+    sortOldest: "Oldest first", sortYoungest: "Youngest first",
+    sortHeaviest: "Heaviest first", sortLightest: "Lightest first",
+    sexAll: "Men & women", sexMen: "Men", sexWomen: "Women",
+    sumCustody: n => `In custody: ${n}`, sumMen: n => `Men: ${n}`,
+    sumWomen: n => `Women: ${n}`, sumPhotos: n => `Photos: ${n}`,
     updatedAgo: m => m < 60 ? `Updated ${m}m ago` : `Updated ${Math.floor(m / 60)}h ${m % 60}m ago`,
     booked: "Booked", withheld: "Photo withheld",
     charges: "Charges", charge: "Charge", bond: "Bond", denied: "Bond denied", level: "Level",
@@ -36,6 +41,11 @@ const L = {
     retry: "Reintentar", searchPh: "Buscar nombre, # de ingreso o cargo…",
     noResults: "Ningún preso coincide con tu búsqueda.",
     sortNewest: "Ingreso más reciente", sortName: "Nombre A–Z", sortDate: "Fecha de ingreso",
+    sortOldest: "Mayores primero", sortYoungest: "Menores primero",
+    sortHeaviest: "Más pesados primero", sortLightest: "Más ligeros primero",
+    sexAll: "Hombres y mujeres", sexMen: "Hombres", sexWomen: "Mujeres",
+    sumCustody: n => `En custodia: ${n}`, sumMen: n => `Hombres: ${n}`,
+    sumWomen: n => `Mujeres: ${n}`, sumPhotos: n => `Fotos: ${n}`,
     updatedAgo: m => m < 60 ? `Actualizado hace ${m} min` : `Actualizado hace ${Math.floor(m / 60)}h ${m % 60} min`,
     booked: "Ingresado", withheld: "Foto no publicada",
     charges: "Cargos", charge: "Cargo", bond: "Fianza", denied: "Fianza denegada", level: "Nivel",
@@ -74,13 +84,32 @@ function avFail(img) {
   s.setAttribute("aria-hidden", "true");
   img.replaceWith(s);
 }
-function dateOnly(s) { s = String(s || ""); return s.length >= 10 && s[4] === "-" ? `${s[5]}/${s[8]}/${s.slice(0, 4)}` : s.slice(0, 10) || "—"; }
+function parseDate(s) {
+  if (s == null || s === "") return null;
+  s = String(s).trim();
+  let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (m) {
+    const mo = +m[2], d = +m[3];
+    if (mo >= 1 && mo <= 12 && d >= 1 && d <= 31) return { y: m[1], mo, d };
+    return null; // sentinel dates like 0000-00-00 -> unknown
+  }
+  const t = new Date(s);
+  if (!isNaN(t)) return { y: t.getFullYear(), mo: t.getMonth() + 1, d: t.getDate() };
+  return null;
+}
+function dateOnly(s) {
+  const p = parseDate(s);
+  if (!p) return String(s ?? "").slice(0, 10) || "—";
+  const pad = n => String(n).padStart(2, "0");
+  return `${pad(p.mo)}/${pad(p.d)}/${p.y}`;
+}
 function age(dob) {
-  if (!dob) return null;
-  const d = new Date(dob), n = new Date();
-  let a = n.getFullYear() - d.getFullYear();
-  if (n.getMonth() < d.getMonth() || (n.getMonth() === d.getMonth() && n.getDate() < d.getDate())) a--;
-  return Number.isFinite(a) && a >= 0 ? a : null;
+  const p = parseDate(dob);
+  if (!p) return null;
+  const n = new Date();
+  let a = n.getFullYear() - +p.y;
+  if (n.getMonth() + 1 < p.mo || (n.getMonth() + 1 === p.mo && n.getDate() < p.d)) a--;
+  return a >= 0 ? a : null;
 }
 function money(v) {
   if (v == null || v === "") return null;
@@ -130,13 +159,21 @@ function haystack(r) {
 }
 function filtered() {
   const q = state.q.trim().toLowerCase();
+  const sex = $("#sexSel").value;
   let list = state.records;
   if (q) list = list.filter(r => haystack(r).includes(q));
+  if (sex === "men") list = list.filter(r => (r.gender || "").toUpperCase() === "MALE");
+  else if (sex === "women") list = list.filter(r => (r.gender || "").toUpperCase() === "FEMALE");
   const sort = $("#sortSel").value;
+  const p = dob => { const x = parseDate(dob); return x ? +x.y * 10000 + x.mo * 100 + x.d : (sort === "youngest" ? -Infinity : Infinity); };
   const sorter = {
     newest: (a, b) => String(b.bookingID || "").localeCompare(String(a.bookingID || "")),
     name: (a, b) => nameOf(a).localeCompare(nameOf(b)),
-    date: (a, b) => String(b.booked || "").localeCompare(String(a.booked || ""))
+    date: (a, b) => String(b.booked || "").localeCompare(String(a.booked || "")),
+    oldest: (a, b) => p(a.dob) - p(b.dob),
+    youngest: (a, b) => p(b.dob) - p(a.dob),
+    heaviest: (a, b) => (b.weight ?? -1) - (a.weight ?? -1),
+    lightest: (a, b) => (a.weight ?? Infinity) - (b.weight ?? Infinity)
   }[sort] || (() => 0);
   return list.slice().sort(sorter);
 }
@@ -159,8 +196,13 @@ function updateCounts() {
   if (tb && !tb.querySelector(".phcount")) tb.appendChild(Object.assign(document.createElement("span"), { className: "phcount" }));
   const c = tb.querySelector(".phcount");
   if (c) c.textContent = ` (${photos})`;
-  const ti = $("#tabInmates");
-  if (ti) ti.dataset.count = state.records.length;
+  const men = state.records.filter(r => (r.gender || "").toUpperCase() === "MALE").length;
+  const women = state.records.length - men;
+  const set = (id, fn, n) => { const el = $(id); if (el) el.textContent = fn(n); };
+  set("#sumCustody", t("sumCustody"), state.records.length);
+  set("#sumMen", t("sumMen"), men);
+  set("#sumWomen", t("sumWomen"), women);
+  set("#sumPhotos", t("sumPhotos"), photos);
 }
 function renderCards(list) {
   $("#photogrid").style.display = "none";
@@ -321,6 +363,7 @@ function init() {
     deb = setTimeout(() => { state.q = e.target.value; applyFilters(); }, 200);
   });
   $("#sortSel").onchange = () => applyFilters();
+  $("#sexSel").onchange = () => applyFilters();
   $("#mClose").onclick = closeModal;
   $("#lbClose").onclick = closeLightbox;
   $("#lbFile").onclick = () => {

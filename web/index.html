@@ -63,7 +63,22 @@
           <option value="newest" data-i18n="sortNewest">Newest booking</option>
           <option value="name" data-i18n="sortName">Name A–Z</option>
           <option value="date" data-i18n="sortDate">Booked date</option>
+          <option value="oldest" data-i18n="sortOldest">Oldest first</option>
+          <option value="youngest" data-i18n="sortYoungest">Youngest first</option>
+          <option value="heaviest" data-i18n="sortHeaviest">Heaviest first</option>
+          <option value="lightest" data-i18n="sortLightest">Lightest first</option>
         </select>
+        <select id="sexSel" aria-label="Filter by gender">
+          <option value="all" data-i18n="sexAll">Men &amp; women</option>
+          <option value="men" data-i18n="sexMen">Men</option>
+          <option value="women" data-i18n="sexWomen">Women</option>
+        </select>
+      </div>
+      <div id="sumstrip" class="sumstrip" role="status">
+        <span class="sumchip" id="sumCustody"></span>
+        <span class="sumchip" id="sumMen"></span>
+        <span class="sumchip" id="sumWomen"></span>
+        <span class="sumchip" id="sumPhotos"></span>
       </div>
     </section>
 
