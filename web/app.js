@@ -1,84 +1,97 @@
 /* Starr County Jail Roster — live lookup app.
    Loads data.json (mirrored hourly from the county's public Webjail API by
    GitHub Actions) from the same origin — no CORS relay, no runtime county
-   calls. Two views: inmate cards + photo grid; each inmate file shows
-   charges up top. See tools/mirror.py. */
+   calls. Two views: roster cards + photo wall; every card opens an inmate
+   file with charges/bond up top. See tools/mirror.py and docs/ for the API. */
 "use strict";
 
+/* ---------------------------------------------------------------- i18n */
 const L = {
   en: {
     title: "Starr County Jail", hsub: "Inmate roster · Rio Grande City, TX",
-    eyebrow: "Starr County · Texas",
-    subtitle: "Live inmate & booking lookup — Rio Grande City, TX",
+    heroTitle: "Starr County Jail Roster",
+    heroSub: "Live inmate & booking lookup · Rio Grande City, Texas",
     liveLabel: "Live",
+    themeLabel: "Switch light / dark theme",
+    clearLabel: "Clear search",
     statusInit: "Loading roster…",
     statusOk: n => `${n} in custody`,
     statusErr: "Couldn't load the roster. The mirror updates hourly — try again in a moment.",
     retry: "Try again", searchPh: "Search name, booking # or charge…",
+    showing: (n, total) => n === total ? `${total} records` : `Showing ${n} of ${total}`,
     noResults: "No inmates match your search.",
     sortNewest: "Newest booking", sortName: "Name A–Z", sortDate: "Booked date",
     sortOldest: "Oldest first", sortYoungest: "Youngest first",
     sortHeaviest: "Heaviest first", sortLightest: "Lightest first",
     sortTallest: "Tallest first", sortShortest: "Shortest first",
     sexAll: "Men & women", sexMen: "Men", sexWomen: "Women",
-    sumCustody: n => `In custody: ${n}`, sumMen: n => `Men: ${n}`,
-    sumWomen: n => `Women: ${n}`, sumPhotos: n => `Photos: ${n}`,
+    tileCustody: "In custody", tileMen: "Men", tileWomen: "Women", tilePhotos: "With photo",
     updatedAgo: m => m < 60 ? `Updated ${m}m ago` : `Updated ${Math.floor(m / 60)}h ${m % 60}m ago`,
     booked: "Booked", withheld: "Photo withheld",
-    bToday: "today", bYesterday: "yesterday", bDaysAgo: n => `${n} days ago`,
+    bToday: "Booked today", bYesterday: "Booked yesterday", bDaysAgo: n => `Booked ${n} days ago`,
+    bookedOn: d => `Booked ${d}`,
     charges: "Charges", charge: "Charge", bond: "Bond", denied: "Bond denied", level: "Level",
     agency: "Agency", arrested: "Arrested", dob: "DOB", gender: "Gender", race: "Race",
     height: "Height", weight: "Weight", booking: "Booking", subject: "Subject",
-    eye: "Eyes", hair: "Hair",
-    noCharges: "No charges listed.", totalBond: "Total bond", stay: "In custody since",
+    eye: "Eyes", hair: "Hair", age: "Age", stay: "In custody since",
+    noCharges: "No charges listed.", totalBond: "Total bond", bondNone: "No bond set",
     tabInmates: "Inmates", tabPhotos: "Photos", viewFile: "View file",
     photosOf: n => `${n} photos`,
     footTitle: "About this site",
     footData: "Data is mirrored every hour from the Starr County jail system's public Webjail feed. Released inmates are removed from the feed automatically, so they disappear from this roster too.",
     footNote: "Not an official county website. Verify with the Starr County Sheriff's Office at (956) 487-5571 before acting on this information.",
-    live: "Hourly mirror · updated"
+    footDocs: "Field guide, recipes & live test suite for developers and AI agents",
+    footDocs2: "API documentation",
+    live: "Hourly mirror ·"
   },
   es: {
     title: "Cárcel del Condado de Starr", hsub: "Lista de presos · Rio Grande City, TX",
-    eyebrow: "Condado de Starr · Texas",
-    subtitle: "Consulta de presos e ingresos en vivo — Rio Grande City, TX",
+    heroTitle: "Lista de la Cárcel del Condado de Starr",
+    heroSub: "Consulta de presos e ingresos en vivo · Rio Grande City, Texas",
     liveLabel: "En vivo",
+    themeLabel: "Cambiar tema claro / oscuro",
+    clearLabel: "Borrar búsqueda",
     statusInit: "Cargando lista…",
     statusOk: n => `${n} en custodia`,
     statusErr: "No se pudo cargar la lista. El espejo se actualiza cada hora — intenta de nuevo en un momento.",
     retry: "Reintentar", searchPh: "Buscar nombre, # de ingreso o cargo…",
+    showing: (n, total) => n === total ? `${total} registros` : `Mostrando ${n} de ${total}`,
     noResults: "Ningún preso coincide con tu búsqueda.",
     sortNewest: "Ingreso más reciente", sortName: "Nombre A–Z", sortDate: "Fecha de ingreso",
     sortOldest: "Mayores primero", sortYoungest: "Menores primero",
     sortHeaviest: "Más pesados primero", sortLightest: "Más ligeros primero",
     sortTallest: "Más altos primero", sortShortest: "Más bajos primero",
     sexAll: "Hombres y mujeres", sexMen: "Hombres", sexWomen: "Mujeres",
-    sumCustody: n => `En custodia: ${n}`, sumMen: n => `Hombres: ${n}`,
-    sumWomen: n => `Mujeres: ${n}`, sumPhotos: n => `Fotos: ${n}`,
+    tileCustody: "En custodia", tileMen: "Hombres", tileWomen: "Mujeres", tilePhotos: "Con foto",
     updatedAgo: m => m < 60 ? `Actualizado hace ${m} min` : `Actualizado hace ${Math.floor(m / 60)}h ${m % 60} min`,
     booked: "Ingresado", withheld: "Foto no publicada",
-    bToday: "hoy", bYesterday: "ayer", bDaysAgo: n => `hace ${n} días`,
+    bToday: "Ingresado hoy", bYesterday: "Ingresado ayer", bDaysAgo: n => `Ingresado hace ${n} días`,
+    bookedOn: d => `Ingresado ${d}`,
     charges: "Cargos", charge: "Cargo", bond: "Fianza", denied: "Fianza denegada", level: "Nivel",
     agency: "Agencia", arrested: "Arrestado", dob: "Nacimiento", gender: "Género", race: "Raza",
     height: "Estatura", weight: "Peso", booking: "Ingreso", subject: "Sujeto",
-    eye: "Ojos", hair: "Cabello",
-    noCharges: "No hay cargos registrados.", totalBond: "Fianza total", stay: "En custodia desde",
+    eye: "Ojos", hair: "Cabello", age: "Edad", stay: "En custodia desde",
+    noCharges: "No hay cargos registrados.", totalBond: "Fianza total", bondNone: "Sin fianza",
     tabInmates: "Presos", tabPhotos: "Fotos", viewFile: "Ver ficha",
     photosOf: n => `${n} fotos`,
     footTitle: "Acerca de este sitio",
     footData: "Los datos se reflejan cada hora desde el sistema público Webjail del condado de Starr. Los liberados se eliminan automáticamente del sistema, así que desaparecen de esta lista también.",
     footNote: "Este no es un sitio oficial del condado. Verifica con la Oficina del Sheriff del Condado de Starr al (956) 487-5571 antes de actuar con esta información.",
-    live: "Espejo horario · actualizado"
+    footDocs: "Guía de la API, recetas y pruebas en vivo para desarrolladores y agentes de IA",
+    footDocs2: "Documentación de la API",
+    live: "Espejo horario ·"
   }
 };
 let lang = (navigator.language || "en").toLowerCase().startsWith("es") ? "es" : "en";
-const t = k => typeof L[lang][k] === "function" ? L[lang][k] : L[lang][k] || k;
+const t = k => typeof L[lang][k] === "function" ? L[lang][k] : (L[lang][k] || k);
 
 const $ = s => document.querySelector(s);
-const esc = s => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+const esc = s => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;")
+  .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 const state = { records: [], loadedAt: null, q: "", err: false, view: "inmates" };
 
+/* ---------------------------------------------------------------- helpers */
 function nameOf(r) { return r.name || [r.FirstName, r.MiddleName, r.LastName].filter(Boolean).join(" "); }
 function initials(name) {
   const w = String(name || "").trim().split(/\s+/).filter(Boolean);
@@ -89,7 +102,7 @@ function initials(name) {
 }
 function avFail(img) {
   const s = document.createElement("span");
-  s.className = "av";
+  s.className = "cav";
   s.textContent = img.dataset.init || "—";
   s.setAttribute("aria-hidden", "true");
   img.replaceWith(s);
@@ -97,14 +110,14 @@ function avFail(img) {
 function parseDate(s) {
   if (s == null || s === "") return null;
   s = String(s).trim();
-  let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  const m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
   if (m) {
     const mo = +m[2], d = +m[3];
     if (mo >= 1 && mo <= 12 && d >= 1 && d <= 31) return { y: m[1], mo, d };
-    return null; // sentinel dates like 0000-00-00 -> unknown
+    return null;                       // sentinel dates like 0000-00-00 -> unknown
   }
-  const t = new Date(s);
-  if (!isNaN(t)) return { y: t.getFullYear(), mo: t.getMonth() + 1, d: t.getDate() };
+  const dt = new Date(s);
+  if (!isNaN(dt)) return { y: dt.getFullYear(), mo: dt.getMonth() + 1, d: dt.getDate() };
   return null;
 }
 function dateOnly(s) {
@@ -131,11 +144,11 @@ function bookedPhrase(s) {
   const now = new Date();
   const ref = { y: now.getFullYear(), mo: now.getMonth() + 1, d: now.getDate() };
   let days = Math.round((Date.UTC(+ref.y, ref.mo - 1, ref.d) - Date.UTC(+p.y, p.mo - 1, p.d)) / 864e5);
-  if (days < 0) days = 0;  // future-looking county label -> same-day booking
+  if (days < 0) days = 0;                       // future-looking county label -> same-day booking
   if (days === 0) return t("bToday");
   if (days === 1) return t("bYesterday");
   if (days <= 6) return t("bDaysAgo")(days);
-  return dateOnly(s);
+  return t("bookedOn")(dateOnly(s));
 }
 function money(v) {
   if (v == null || v === "") return null;
@@ -147,11 +160,11 @@ function chargeText(r) {
 }
 function totalBond(r) {
   const ch = r.charges || [];
-  if (!ch.some(c => c.bond != null && c.bond !== "")) return null;  // no bonds set
+  if (!ch.some(c => c.bond != null && c.bond !== "")) return null;   // no bonds set at all
   return ch.reduce((s, c) => s + (Number(c.bond) || 0), 0);
 }
 
-/* ---------- data (same-origin mirror) ---------- */
+/* ---------------------------------------------------------------- data */
 async function load() {
   state.err = false;
   setStatus("statusInit");
@@ -167,7 +180,7 @@ async function load() {
     state.err = true;
     setStatus("statusErr", 0, "err");
     $("#grid").innerHTML = "";
-    let p = $("#progress");
+    const p = $("#progress");
     p.innerHTML = `<button class="btn" id="retryBtn" type="button">${esc(t("retry"))}</button>`;
     $("#retryBtn").onclick = () => { p.innerHTML = ""; load(); };
   }
@@ -179,9 +192,10 @@ function tickClock() {
   if (el) el.textContent = `${t("live")} ${t("updatedAgo")(m)}`;
 }
 
-/* ---------- filtering / sorting (client-side; API has no search) ---------- */
+/* ------------------------------------- filtering / sorting (client-side) */
 function haystack(r) {
-  return (nameOf(r) + " " + (r.bookingID || "") + " " + (r.ptsBookingID ?? "") + " " + chargeText(r)).toLowerCase();
+  return (nameOf(r) + " " + (r.bookingID || "") + " " + (r.ptsBookingID ?? "") + " " +
+    chargeText(r)).toLowerCase();
 }
 function heightInches(h) {
   if (!h) return null;
@@ -212,7 +226,7 @@ function filtered() {
   return list.slice().sort(sorter);
 }
 
-/* ---------- rendering ---------- */
+/* ---------------------------------------------------------------- render */
 function applyFilters() {
   const list = filtered();
   const photoList = list.filter(r => r.img && r.imgPub !== false);
@@ -227,55 +241,79 @@ function applyFilters() {
 function updateCounts() {
   const photos = state.records.filter(r => r.img && r.imgPub !== false).length;
   const tb = $("#tabPhotos");
-  if (tb && !tb.querySelector(".phcount")) tb.appendChild(Object.assign(document.createElement("span"), { className: "phcount" }));
-  const c = tb.querySelector(".phcount");
-  if (c) c.textContent = ` (${photos})`;
+  let c = tb.querySelector(".phcount");
+  if (!c) { c = document.createElement("span"); c.className = "phcount"; tb.appendChild(c); }
+  c.textContent = `(${photos})`;
+
   const men = state.records.filter(r => (r.gender || "").toUpperCase() === "MALE").length;
   const women = state.records.length - men;
-  const set = (id, fn, n) => { const el = $(id); if (el) el.textContent = fn(n); };
-  set("#sumCustody", t("sumCustody"), state.records.length);
-  set("#sumMen", t("sumMen"), men);
-  set("#sumWomen", t("sumWomen"), women);
-  set("#sumPhotos", t("sumPhotos"), photos);
-}
-function renderCards(list) {
-  $("#photogrid").style.display = "none";
-  $("#grid").style.display = "grid";
-  $("#grid").innerHTML = list.map((r, i) => cardHTML(r, Math.min(i, 10))).join("") ||
-    `<div class="empty" style="display:block"><p>${esc(t("noResults"))}</p></div>`;
+  const set = (id, n) => {
+    const el = $(`#${id} .sval`);
+    if (el) el.textContent = Number.isFinite(n) ? n : "—";
+  };
+  set("sumCustody", state.records.length);
+  set("sumMen", men);
+  set("sumWomen", women);
+  set("sumPhotos", photos);
+
+  const shown = state.view === "photos"
+    ? state.records.filter(r => r.img && r.imgPub !== false && (!state.q.trim() ||
+        haystack(r).includes(state.q.trim().toLowerCase()))).length
+    : filtered().length;
+  $("#resultCount").textContent = t("showing")(shown, state.records.length);
 }
 function cardHTML(r, di) {
   const a = age(r.dob);
   const init = initials(nameOf(r));
-  const thumb = r.img && r.imgPub !== false
-    ? `<img class="thumb" loading="lazy" src="${esc(r.img)}" data-init="${esc(init)}" alt="Mugshot of ${esc(nameOf(r))}" onerror="avFail(this)">`
-    : `<span class="av" aria-hidden="true">${esc(init)}</span>`;
+  const hasImg = r.img && r.imgPub !== false;
+  const thumb = hasImg
+    ? `<img class="thumb" loading="lazy" src="${esc(r.img)}" data-init="${esc(init)}"
+            alt="Mugshot of ${esc(nameOf(r))}" onload="this.classList.add('in')" onerror="avFail(this)">`
+    : `<span class="cav" aria-hidden="true">${esc(init)}</span>`;
   const ch = r.charges || [];
+  const tb = totalBond(r);
+  const pills = [];
+  if (a != null) pills.push(`<span class="pill">${a} ${lang === "es" ? "años" : "yrs"}</span>`);
+  if (tb != null) pills.push(`<span class="pill bond">${esc(t("bond"))} ${money(tb)}</span>`);
+  if (ch.some(o => o.denied)) pills.push(`<span class="pill denied">${esc(t("denied"))}</span>`);
+  const gr = [r.gender, r.race].filter(Boolean).join(" · ");
+  if (gr) pills.push(`<span class="pill gender">${esc(gr)}</span>`);
   const chLine = ch.length
-    ? `<span class="cmeta chg"><span>${esc(t("charges"))}: ${ch.length}</span>` +
-      (ch[0].desc ? `<span class="ellip">${esc(ch[0].desc)}${ch.length > 1 ? " +" + (ch.length - 1) : ""}</span>` : "") + `</span>`
-    : `<span class="cmeta chg">${esc(t("noCharges"))}</span>`;
+    ? `<span class="chg"><b>${esc(t("charges"))}: ${ch.length}</b>` +
+      (ch[0].desc ? `<span class="ellip">${esc(ch[0].desc)}${ch.length > 1 ? ` +${ch.length - 1}` : ""}</span>` : "") +
+      `</span>`
+    : `<span class="chg"><b>${esc(t("charges"))}: 0</b><span class="ellip">${esc(t("noCharges"))}</span></span>`;
   return `<button type="button" class="card" data-pid="${esc(r.ptsBookingID)}" style="--i:${di}">
-    ${thumb}
-    <div class="cbody">
-      <span class="cname">${esc(nameOf(r))}</span>
-      <span class="cmeta">
-        <span>#${esc(r.bookingID)}</span>
-        <span>· ${esc(t("booked"))} ${esc(bookedPhrase(r.booked))}</span>
-        ${a != null ? `<span>· ${a} ${lang === "es" ? "años" : "yrs"}</span>` : ""}
+    <span class="cphoto">
+      ${thumb}
+      ${!hasImg ? `<span class="phbadge">${esc(t("withheld"))}</span>` : ""}
+      <span class="povl">
+        <span class="pname">${esc(nameOf(r))}</span>
+        <span class="pno">#${esc(r.bookingID)}</span>
       </span>
+    </span>
+    <span class="cbody">
+      <span class="crow"><span class="strong">${esc(bookedPhrase(r.booked))}</span></span>
       ${chLine}
-      <span class="cmeta">${esc(r.gender || "")}${r.race ? " · " + esc(r.race) : ""}
-        ${r.imgPub === false ? `<span class="badge withheld">${esc(t("withheld"))}</span>` : ""}</span>
-    </div>
+      <span class="pills">${pills.join("")}</span>
+    </span>
   </button>`;
+}
+function renderCards(list) {
+  $("#photogrid").style.display = "none";
+  $("#grid").style.display = "grid";
+  $("#grid").innerHTML = list.map((r, i) => cardHTML(r, Math.min(i, 12))).join("") ||
+    `<div class="empty" style="display:block"><p>${esc(t("noResults"))}</p></div>`;
 }
 function renderPhotos(list) {
   $("#grid").style.display = "none";
   $("#photogrid").style.display = "grid";
   $("#photogrid").innerHTML = list.length ? list.map((p, i) => `
-    <button type="button" class="ptile" data-pid="${esc(p.ptsBookingID)}" title="${esc(nameOf(p))}" style="--i:${Math.min(i, 16)}">
-      <img loading="lazy" src="${esc(p.img)}" alt="Mugshot of ${esc(nameOf(p))}">
+    <button type="button" class="ptile" data-pid="${esc(p.ptsBookingID)}" title="${esc(nameOf(p))}"
+            style="--i:${Math.min(i, 18)}" aria-label="${esc(nameOf(p))}">
+      <img loading="lazy" src="${esc(p.img)}" alt="Mugshot of ${esc(nameOf(p))}"
+           onload="this.classList.add('in')">
+      <span class="tcap"><span>${esc(nameOf(p))}</span></span>
     </button>`).join("") : "";
 }
 function skeletons(n) {
@@ -284,15 +322,13 @@ function skeletons(n) {
   $("#grid").innerHTML = Array.from({ length: n },
     () => `<div class="skel"><div class="b"></div></div>`).join("");
 }
-
-/* ---------- status ---------- */
 function setStatus(kind, n, cls) {
   const fn = L[lang][kind];
   $("#statusText").textContent = typeof fn === "function" ? fn(n) : fn || kind;
   $("#statusDot").className = "dot" + (cls ? " " + cls : "");
 }
 
-/* ---------- views ---------- */
+/* ---------------------------------------------------------------- views */
 function switchView(v) {
   state.view = v;
   $("#tabInmates").classList.toggle("active", v === "inmates");
@@ -300,74 +336,85 @@ function switchView(v) {
   applyFilters();
 }
 
-/* ---------- detail modal (the inmate file) ---------- */
+/* ------------------------------------------- detail modal (inmate file) */
 function openDetail(pid) {
   const r = state.records.find(x => String(x.ptsBookingID) === String(pid));
   if (!r) return;
   const a = age(r.dob);
-  const img = r.img && r.imgPub !== false;
-  $("#mImg").hidden = !img;
-  if (img) { $("#mImg").src = r.img; $("#mImg").onerror = () => { $("#mImg").hidden = true; }; }
+  const hasImg = r.img && r.imgPub !== false;
+  const img = $("#mImg"), av = $("#mAvatar");
+  img.hidden = !hasImg; av.hidden = hasImg;
+  if (hasImg) { img.src = r.img; img.onerror = () => { img.hidden = true; av.hidden = false; }; }
+  else av.textContent = initials(nameOf(r));
+
   $("#mName").textContent = nameOf(r);
-  const meta = [`#${r.bookingID}`, `${t("booked")} ${bookedPhrase(r.booked)}`,
+  $("#mMeta").textContent = [`#${r.bookingID}`, bookedPhrase(r.booked),
     r.gender && r.race ? `${r.gender} · ${r.race}` : (r.gender || r.race || "")].filter(Boolean).join(" · ");
-  $("#mMeta").textContent = meta;
+  if (!hasImg) $("#mMeta").textContent += ` · ${t("withheld")}`;
+
+  const cells = [];
+  const cell = (k, v) => { if (v != null && v !== "") cells.push(`<span class="qcell"><span class="qk">${esc(k)}</span><span class="qv">${esc(v)}</span></span>`); };
+  cell(t("age"), a != null ? `${a}` : null);
+  cell(t("dob"), r.dob ? dateOnly(r.dob) : null);
+  cell(t("height"), r.height);
+  cell(t("weight"), r.weight != null ? `${r.weight} lbs` : null);
+  cell(t("eye"), r.eye);
+  cell(t("hair"), r.hair);
+  $("#mQuick").innerHTML = cells.join("");
 
   const ch = r.charges || [];
   const tb = totalBond(r);
-  const chHead = `<div class="srow"><span><b>${esc(t("charges"))} (${ch.length})</b></span>` +
-    (tb != null ? `<b class="bondtot">${esc(t("totalBond"))}: ${money(tb)}</b>` : `<b>—</b>`) + `</div>`;
-  $("#mBody").innerHTML = chHead +
+  $("#mBody").innerHTML =
+    `<div class="chead"><b>${esc(t("charges"))} (${ch.length})</b>` +
+    (tb != null ? `<span class="bondtot">${esc(t("totalBond"))}: ${money(tb)}</span>`
+                : `<span class="mut">${esc(t("bondNone"))}</span>`) + `</div>` +
     `<div class="charges">` +
     (ch.length ? ch.map(o => {
       const b = money(o.bond);
       return `<div class="charge"><div class="d">${esc(o.desc || "—")}</div>
         <div class="x">
-          ${o.level ? `<span>${esc(t("level"))}: ${esc(o.level)}</span>` : ""}
-          ${b ? `<span>${esc(t("bond"))}: ${b}</span>` : ""}
+          ${o.level ? `<span>${esc(t("level"))} <b>${esc(o.level)}</b></span>` : ""}
+          ${b != null ? `<span>${esc(t("bond"))} <b>${b}</b></span>` : ""}
           ${o.denied ? `<span class="denied">${esc(t("denied"))}</span>` : ""}
           ${o.agency ? `<span>${esc(o.agency)}</span>` : ""}
           ${o.arrested ? `<span>${esc(t("arrested"))} ${esc(dateOnly(o.arrested))}</span>` : ""}
         </div></div>`;
-    }).join("") : `<span class="mut">${esc(t("noCharges"))}</span>`) +
-    `</div>` +
-    `<div class="dets">
-      ${a != null ? row(t("dob"), `${dateOnly(r.dob)} (${a})`) : ""}
-      ${r.height ? row(t("height"), esc(r.height)) : ""}
-      ${r.weight != null ? row(t("weight"), r.weight + " lbs") : ""}
-      ${r.eye ? row(t("eye"), esc(r.eye)) : ""}
-      ${r.hair ? row(t("hair"), esc(r.hair)) : ""}
-      ${row(t("booking"), esc(r.bookingID))}
-      ${r.ptsSubjectID != null ? row(t("subject"), r.ptsSubjectID) : ""}
-    </div>`;
+    }).join("") : `<span class="mut">${esc(t("noCharges"))}</span>`) + `</div>`;
+
+  $("#mFoot").innerHTML =
+    row(t("booking"), `#${esc(r.bookingID)}`) +
+    (r.ptsBookingID != null ? row("ptsBookingID", r.ptsBookingID) : "") +
+    (r.dob ? row(t("dob"), `${dateOnly(r.dob)}${a != null ? ` (${a})` : ""}`) : "") +
+    (r.booked ? row(t("booked"), `${dateOnly(r.booked)} · ${bookedPhrase(r.booked)}`) : "");
+
   $("#modal").style.display = "flex";
-  document.body.style.overflow = "hidden";
+  document.body.classList.add("locked");
 }
 function row(k, v) { return `<div class="srow"><span>${esc(k)}</span><b>${v}</b></div>`; }
 function closeModal() {
   $("#modal").style.display = "none";
-  document.body.style.overflow = "";
+  document.body.classList.remove("locked");
 }
 
-/* ---------- lightbox (photo view) ---------- */
+/* ---------------------------------------------------------------- lightbox */
 function openLightbox(pid) {
   const r = state.records.find(x => String(x.ptsBookingID) === String(pid));
   if (!r || !r.img) return;
   $("#lbImg").src = r.img;
   $("#lbName").textContent = nameOf(r);
   const a = age(r.dob);
-  $("#lbMeta").textContent = `#${r.bookingID} · ${t("booked")} ${bookedPhrase(r.booked)}` +
+  $("#lbMeta").textContent = `#${r.bookingID} · ${bookedPhrase(r.booked)}` +
     (a != null ? ` · ${a} ${lang === "es" ? "años" : "yrs"}` : "") +
-    ` · ${esc(t("charges"))}: ${(r.charges || []).length}`;
+    ` · ${t("charges")}: ${(r.charges || []).length}`;
   $("#lightbox").style.display = "flex";
-  document.body.style.overflow = "hidden";
+  document.body.classList.add("locked");
 }
 function closeLightbox() {
   $("#lightbox").style.display = "none";
-  document.body.style.overflow = "";
+  document.body.classList.remove("locked");
 }
 
-/* ---------- i18n ---------- */
+/* ---------------------------------------------------------------- i18n */
 function applyLang() {
   document.documentElement.lang = lang;
   $("#langBtn").textContent = lang === "en" ? "ES" : "EN";
@@ -379,25 +426,54 @@ function applyLang() {
     const k = el.dataset.i18nPh;
     if (L[lang][k]) el.placeholder = L[lang][k];
   });
+  document.querySelectorAll("[data-i18n-aria]").forEach(el => {
+    const k = el.dataset.i18nAria;
+    if (L[lang][k]) el.setAttribute("aria-label", L[lang][k]);
+  });
   updateCounts();
 }
 
-/* ---------- init ---------- */
+/* ---------------------------------------------------------------- theme */
+function applyTheme(mode) {
+  if (mode === "system") document.documentElement.removeAttribute("data-theme");
+  else document.documentElement.dataset.theme = mode;
+  try { localStorage.setItem("sjr-theme", mode); } catch (e) { /* private mode */ }
+}
+function currentTheme() {
+  const explicit = document.documentElement.dataset.theme;
+  if (explicit) return explicit;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
+/* ---------------------------------------------------------------- init */
 let deb;
 function init() {
+  try {
+    const saved = localStorage.getItem("sjr-theme");
+    if (saved) applyTheme(saved);
+  } catch (e) { /* ignore */ }
+  $("#apiUrl").textContent = "64.225.20.254:3030";
+
   applyLang();
   load();
   setInterval(tickClock, 60000);
 
+  $("#themeBtn").onclick = () => applyTheme(currentTheme() === "dark" ? "light" : "dark");
   $("#langBtn").onclick = () => { lang = lang === "en" ? "es" : "en"; applyLang(); applyFilters(); };
   $("#tabInmates").onclick = () => switchView("inmates");
   $("#tabPhotos").onclick = () => switchView("photos");
+
   $("#q").addEventListener("input", e => {
+    $("#qClear").hidden = !e.target.value;
     clearTimeout(deb);
     deb = setTimeout(() => { state.q = e.target.value; applyFilters(); }, 200);
   });
+  $("#qClear").onclick = () => {
+    $("#q").value = ""; state.q = ""; $("#qClear").hidden = true; applyFilters(); $("#q").focus();
+  };
   $("#sortSel").onchange = () => applyFilters();
   $("#sexSel").onchange = () => applyFilters();
+
   $("#mClose").onclick = closeModal;
   $("#lbClose").onclick = closeLightbox;
   $("#lbFile").onclick = () => {
@@ -419,10 +495,13 @@ function init() {
   });
   $("#photogrid").addEventListener("click", e => {
     const tile = e.target.closest(".ptile");
-    if (tile) {
-      $("#lbFile").dataset.pid = tile.dataset.pid;
-      openLightbox(tile.dataset.pid);
-    }
+    if (tile) { $("#lbFile").dataset.pid = tile.dataset.pid; openLightbox(tile.dataset.pid); }
   });
+
+  /* sticky toolbar elevation */
+  const tb = $("#toolbar");
+  const onScroll = () => tb.classList.toggle("elev", window.scrollY > 8);
+  window.addEventListener("scroll", onScroll, { passive: true });
+  onScroll();
 }
 document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", init) : init();

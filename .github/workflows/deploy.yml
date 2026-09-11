@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ["web/**", "tools/**", ".github/workflows/**"]
+    paths: ["web/**", "tools/**", "llms.txt", ".github/workflows/**"]
 
 permissions:
   contents: read
@@ -27,7 +27,9 @@ jobs:
         run: python3 tools/mirror.py
 
       - name: Copy web app into site
-        run: cp -R web/. _site/
+        run: |
+          cp -R web/. _site/
+          cp llms.txt _site/llms.txt   # agent-facing index, linked from the footer
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
