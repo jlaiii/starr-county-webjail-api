@@ -1,6 +1,7 @@
 # Starr County (TX) Jail — Inmate Roster & Public Webjail Booking API
 
 [![Live demo](https://img.shields.io/badge/LIVE%20demo-GitHub%20Pages-1d4ed8)](https://jlaiii.github.io/starr-county-webjail-api/)
+[![Docs: live-asserted](https://img.shields.io/badge/docs-live--asserted-0f7a4a)](#verify-the-docs-against-the-live-api)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 **Live inmate roster & lookup for Starr County Jail, Rio Grande City, Texas**
@@ -9,8 +10,16 @@ bonds and booking dates, with data pulled **directly from the county's public
 Webjail feed** (updated hourly).
 
 - **Use it live**: <https://jlaiii.github.io/starr-county-webjail-api/>
-- **API field guide** (for developers *and* AI agents): see [`docs/`](docs/)
-- **Working code**: see [`examples/`](examples/)
+- **API field guide** (for developers *and* AI agents): [`docs/`](docs/) —
+  endpoints, data model, query behavior, lifecycle, pitfalls, recipes, and a
+  realtime study
+- **Live test suite**: [`tools/api_probe.py`](tools/api_probe.py) — ~40
+  read-only checks that assert every documented behavior against the county box
+- **CLI + working code**: [`tools/jail.py`](tools/jail.py)
+  (count / newest / find / show / photo / csv) and [`examples/`](examples/)
+- **Machine-readable**: [`schema/`](schema/) JSON Schemas,
+  [`llms.txt`](llms.txt) (one-page LLM index, also served at the site root),
+  [`AGENTS.md`](AGENTS.md) (rules for agents editing this repo)
 
 The county publishes no roster page on its own website — its booking system
 feeds this public Webjail API, which is what this project documents, mirrors,
@@ -37,10 +46,18 @@ into the Pages site (`tools/mirror.py`), so the app is fast and needs no
 CORS relay or runtime calls to the county — data.json and lazy-loaded
 mugshot files come from the same origin over HTTPS.
 
-- Search by name or booking number
-- Sort: newest booking / name / booked date
-- Tap any inmate for details + charges
-- English/Spanish toggle, dark mode, mobile-first
+- Mugshot roster grid (5-up on desktop, 2-up on phones) showing name, booking
+  number, "booked today/yesterday/N days ago", charge count, bond and age at a
+  glance, with a designed placeholder for county-withheld photos
+- Photo wall view for browsing faces, and a full inmate file per person: photo,
+  age / DOB / height / weight / eyes / hair, plus every charge with its level,
+  bond, arresting agency and arrest date and the booking's total bond
+- Search matches name, booking number and charge text; gender filter; nine sorts
+  (newest booking, name, booked date, oldest/youngest, heaviest/lightest,
+  tallest/shortest)
+- Stat band (in custody / men / women / with photo), live status line,
+  English/Spanish toggle, light/dark toggle, mobile-first — no third-party
+  scripts, no trackers, no cookies
 
 Run it locally against a fresh mirror:
 `python3 tools/mirror.py && cd _site && python3 -m http.server 8000`,
@@ -63,6 +80,7 @@ then open <http://localhost:8000>
 | Data freshness | County batch-inserts new bookings hourly at ~`:00:01` UTC |
 | Released inmates | **Records are deleted — no archive exists** |
 | Realtime | `/socket.io/` answers a handshake but emits no events — poll instead ([07](docs/07-realtime.md)) |
+| Docs accuracy | Asserted by [`tools/api_probe.py`](tools/api_probe.py) against the live box: 44 checks, last run 2026-09-11 ([how to re-run](#verify-the-docs-against-the-live-api)) |
 
 ## Quickstart
 
@@ -95,13 +113,16 @@ print(roster["total"], "in custody; newest:", roster["data"][0]["FirstName"], ro
 Or skip the plumbing and use the included CLI:
 
 ```bash
-python3 tools/jail.py count                     # 83 in custody · 214 charge rows
+python3 tools/jail.py count                     # e.g. "83 in custody · 214 charge rows"
 python3 tools/jail.py newest 5                  # latest bookings with charges/bond
 python3 tools/jail.py find "PENA"               # name search (walks the roster client-side)
 python3 tools/jail.py show 10260                # one record + charges (ptsSubjectID or BookingID)
 python3 tools/jail.py photo 10493 --out mugshots
 python3 tools/jail.py csv --out roster.csv
 ```
+
+Add `--json` to any command for machine-readable output — handy inside agent
+loops.
 
 ## Verify the docs against the live API
 
