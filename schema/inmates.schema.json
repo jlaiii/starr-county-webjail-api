@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/jlaiii/starr-county-webjail-api/schema/inmates.schema.json",
+  "title": "Starr County (TX) webjail — inmates record",
+  "description": "One booking/stay as served by GET /inmates (FeathersJS envelope: {total,limit,skip,data:[...]}). Observed field set verified live 2026-09-11 by tools/api_probe.py (check H3). Unknown/extra fields should be tolerated by consumers — the county adds fields without notice.",
+  "type": "object",
+  "required": ["_id", "ptsBookingID", "BookingID", "BookingDate", "FirstName", "LastName", "DOB", "Gender", "createdAt", "updatedAt"],
+  "properties": {
+    "_id": { "type": "string", "pattern": "^[0-9a-f]{24}$", "description": "Mongo ObjectId. NOT accepted by the id route (see ptsSubjectID)." },
+    "ptsSubjectID": { "type": "integer", "description": "Subject id inside the jail management system. This is the key the id route uses: GET /inmates/<ptsSubjectID> returns this single record." },
+    "ptsPersonID": { "type": "integer", "description": "Person id. Distinct per human; two same-name bookings with different ptsPersonID are different people." },
+    "ptsBookingID": { "type": "integer", "description": "Unique per booking/stay. The join key to /offences and /inmate-detail, and the dedupe key for watchers." },
+    "BookingID": { "type": "string", "pattern": "^[0-9]{10}$", "description": "Public booking number: YYYY + zero-padded 6-digit sequence. Lexicographic sort == chronological." },
+    "BookingDate": { "type": "string", "description": "Calendar date the county logged the booking, serialized at UTC midnight (time part is meaningless, do not treat as an instant)." },
+    "FirstName": { "type": "string" },
+    "MiddleName": { "type": "string", "description": "Often an empty string." },
+    "LastName": { "type": "string", "description": "May be hyphenated, e.g. CARDONA-ZUNIGA." },
+    "DOB": { "type": "string", "description": "UTC midnight, date-only. Sentinel values like 0000-00-00 have been observed historically — validate before formatting." },
+    "Gender": { "type": "string", "enum": ["MALE", "FEMALE"], "description": "Observed values; the /inmates/get/genders-races endpoint lists the same two." },
+    "Race": { "type": "string", "description": "Uppercase word. Observed WHITE (majority), BLACK; the genders-races endpoint only lists BLACK/WHITE." },
+    "EyeColor": { "type": "string", "description": "BROWN, GREEN, BLACK, BLUE, HAZEL observed." },
+    "HairColor": { "type": ["string", "null"], "description": "BLACK, BROWN, GREY OR PARTIALLY GREY, BALD observed; null possible." },
+    "Height": { "type": "string", "description": "Feet-inches string, e.g. 5'06\"." },
+    "Weight": { "type": "integer", "description": "Pounds; 119-290 observed." },
+    "MugShotFileStream": { "type": ["string", "null"], "description": "Raw base64 image with NO data: prefix (verified: 100% of records start iVBORw0KGgo = PNG). Median ~267 KB base64 (~200 KB decoded). Strip a data: prefix defensively. Respect PublishImageToWebjail." },
+    "PublishImageToWebjail": { "type": "boolean", "description": "false = the county withholds this photo from the public site (~12% of the roster at last probe). Mirroring consumers must not publish it." },
+    "createdAt": { "type": "string", "description": "API insert time, ISO with ms. Hourly batch: seconds cluster at :00:01-:00:02 UTC. Median ~21 h after BookingDate (min 6 h, max 89 h observed). Use this for new-record watermarks." },
+    "updatedAt": { "type": "string", "description": "Re-stamped on EVERY record at the top of every hour (the sweep takes ~50 s). Useless for change detection." }
+  }
+}

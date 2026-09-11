@@ -1,0 +1,46 @@
+# Starr County (TX) Jail — public Webjail API field guide
+
+> Read-only, undocumented public JSON API behind Starr County, Texas's jail
+> roster (`http://64.225.20.254:3030`). This project reverse-engineers it,
+> asserts the findings with a live test suite, mirrors the data hourly, and
+> serves a lookup app. Everything here was verified against the live endpoint
+> (last probe: see `docs/06-recipes.md` header for the current status line).
+
+## Start here
+
+- [docs/05-pitfalls-for-agents.md](docs/05-pitfalls-for-agents.md): the checklist — 10 traps that break naive integrations (paginated search, `updatedAt` watermarks, release detection, id routes).
+- [docs/01-endpoints.md](docs/01-endpoints.md): every route, verb, status code, and response header, including `ETag`/`304`, gzip, and the single-record id route.
+- [docs/03-query-behavior.md](docs/03-query-behavior.md): which query params are honored (`$limit`, `$skip`, `$sort`) and which are silently ignored (everything else).
+- [docs/02-data-model.md](docs/02-data-model.md): field dictionaries for `inmates` and `offences` with observed enums and quirks.
+- [docs/04-lifecycle.md](docs/04-lifecycle.md): the hourly batch rhythm, why `createdAt` ≠ booking time, and why releases are deletions.
+- [docs/06-recipes.md](docs/06-recipes.md): copy-paste code for counts, single-record fetch, cheap change detection, name lookup, mugshot saving, CSV export, watchers.
+- [docs/07-realtime.md](docs/07-realtime.md): the socket.io surface (handshake works, service events do not) — read before trying to avoid polling.
+
+## Machine-readable
+
+- [schema/inmates.schema.json](schema/inmates.schema.json): JSON Schema for one roster record.
+- [schema/offences.schema.json](schema/offences.schema.json): JSON Schema for one charge row.
+
+## Tools
+
+- [tools/api_probe.py](tools/api_probe.py): live conformance suite — ~40 read-only checks that assert every documented behavior; exits non-zero when the county changes something.
+- [tools/jail.py](tools/jail.py): stdlib CLI — `count`, `newest`, `find NAME`, `show <pid|subject>`, `photo <pid>`, `csv`.
+- [tools/mirror.py](tools/mirror.py): county API → static Pages mirror (roster JSON + mugshot files), run hourly by GitHub Actions.
+- [examples/python/](examples/python): small runnable scripts (roster fetch, booking watcher, release watcher, inmate card).
+- [examples/curl.md](examples/curl.md): curl one-liners.
+
+## Key facts
+
+- Base URL `http://64.225.20.254:3030` (plain HTTP — HTTPS pages cannot fetch it directly; mirror server-side).
+- No auth for reads; writes are auth-protected and must never be attempted.
+- Two live collections: `inmates` (one record per booking, ~250 KB each because every record embeds a base64 mugshot) and `offences` (charges, join on `ptsBookingID`).
+- Page cap 50 (`$limit`), default page 10; `$limit=0` is a cheap count.
+- Full roster ≈ 83 records ≈ 22 MB over 2 pages. Budget accordingly.
+- County inserts/updates on an hourly batch at ~`:00:01` UTC; releases are deletions with no archive.
+- Honor `PublishImageToWebjail: false` (photo withheld) when mirroring.
+- Not an official county site; data may lag or contain county entry errors.
+
+## Optional
+
+- [README.md](README.md): project overview and the live lookup app.
+- [AGENTS.md](AGENTS.md): rules for agents editing this repo.

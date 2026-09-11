@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/jlaiii/starr-county-webjail-api/schema/offences.schema.json",
+  "title": "Starr County (TX) webjail — offences record (one charge)",
+  "description": "One charge row from GET /offences (envelope {total,limit,skip,data:[...]}). The same objects are embedded in GET /inmate-detail/<ptsBookingID> under .offences. Join to inmates via ptsBookingID.",
+  "type": "object",
+  "required": ["_id", "ptsChargeID", "ptsBookingID", "StatuteDescription"],
+  "properties": {
+    "_id": { "type": "string", "pattern": "^[0-9a-f]{24}$", "description": "Mongo ObjectId. GET /offences/<_id> is NOT a working lookup (404)." },
+    "ptsChargeID": { "type": "integer", "description": "Charge id." },
+    "ptsBookingID": { "type": "integer", "description": "Join key to the inmates record for the same stay." },
+    "StatuteDescription": { "type": "string", "description": "Free-text statute, uppercase and heavily abbreviated, e.g. POSS MARIJ >4OZ<=5LBS, CAPIAS (FREE TEXT IN NOTES), OUT OF COUNTY WARRANT. Never parse this into a code." },
+    "StatuteLevel": { "type": ["string", "null"], "description": "Messy in practice: MA, MB, F1, F2, F3, SF, plus the county typo \"MISDEMEANO\" and null (~40% of a recent sample). Treat as an opaque label." },
+    "BondAmount": { "type": ["integer", "null"], "description": "US dollars; null when unset. F1 charges can carry 1,000,000. 0 means no bond set, not \"free\" — check IsBondDenied too." },
+    "IsBondDenied": { "type": "boolean", "description": "Per-charge bond denial. All false in recent snapshots, but the field is authoritative when set." },
+    "ArrestingAgency": { "type": ["string", "null"], "description": "e.g. STARR COUNTY SHERIFF'S OFFICE (note the apostrophe), RIO GRANDE CITY POLICE DEPARTMENT, TEXAS DEPARTMENT OF PUBLIC SAFETY, ROMA POLICE DEPARTMENT, HIDTA; null on some warrant rows." },
+    "ArrestDate": { "type": ["string", "null"], "description": "UTC midnight, date-only; null on some rows (e.g. warrants)." },
+    "createdAt": { "type": "string", "description": "Same hourly batch semantics as inmates." },
+    "updatedAt": { "type": "string", "description": "Re-stamped hourly; not a change signal." }
+  }
+}

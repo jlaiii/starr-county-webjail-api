@@ -25,13 +25,17 @@ record with new IDs. Example values from live data.
 | `HairColor` | string | `"BLACK"` | `BLACK`, `BROWN`, `GREY OR PARTIALLY GREY`, `BALD`, or null |
 | `Height` | string | `"5'06\""` | Feet-inches string with quote |
 | `Weight` | int | `180` | Pounds. Observed 119–290 |
-| `MugShotFileStream` | string | base64 PNG | **Raw base64, no `data:` prefix in current data** (older records may include one — strip defensively). ~150–290 KB decoded. Sniff magic: `iVBORw0KGgo` = PNG, `/9j/` = JPEG |
-| `PublishImageToWebjail` | bool | `true` | County's publication flag; ~96% true. When false, the mugshot is withheld from the public site |
-| `createdAt` | string | `"2026-09-05T18:00:01.280Z"` | **API insert time** — hourly batch, seconds cluster at `:01`–`:02`. Median ~22 h after `BookingDate` (see 04-lifecycle) |
-| `updatedAt` | string | `"2026-09-06T01:00:50.290Z"` | **Re-stamped hourly on every record** — do not use for change detection |
+| `MugShotFileStream` | string | base64 PNG | **Raw base64, no `data:` prefix in current data** (older records may include one — strip defensively). Base64 length 207–355 KB (median ~267 KB) ⇒ ~155–266 KB decoded. Sniff magic: `iVBORw0KGgo` = PNG, `/9j/` = JPEG — 100% of the current roster is PNG |
+| `PublishImageToWebjail` | bool | `true` | County's publication flag. When false the mugshot is withheld from the public site (~12% of the roster at the last probe, so expect gaps and design a placeholder avatar) |
+| `createdAt` | string | `"2026-09-05T18:00:01.280Z"` | **API insert time** — hourly batch, seconds cluster at `:01`–`:02`. Median ~21 h after `BookingDate` (range 6–89 h, see 04-lifecycle) |
+| `updatedAt` | string | `"2026-09-06T01:00:50.290Z"` | **Re-stamped hourly on every record** — the sweep takes ~50 s and touches the whole collection. Do not use for change detection |
 
 There is **no** `IsBondDenied`/bond field at the roster level — bondability
 comes from the booking's `offences` rows.
+
+The whole record is available two ways: paged from `/inmates` (50 max per page)
+or as a single object from the id route **`GET /inmates/<ptsSubjectID>`**
+(keyed on `ptsSubjectID` — a `ptsBookingID` there is a 404).
 
 ## `offences` — charges
 
@@ -43,7 +47,7 @@ Note the same charge is served both here and inside `/inmate-detail/:pid`.
 | `ptsChargeID` | int | `8271` | Charge ID |
 | `ptsBookingID` | int | `10438` | Join key to inmate |
 | `StatuteDescription` | string | `"POSS MARIJ >4OZ<=5LBS"` | Free-text statute (uppercase, abbreviations) |
-| `StatuteLevel` | string | `"SF"` | **Messy**: `MA`, `F3`, `SF`, `F1`, `F2`, `MB`, `MISDEMEANO` (sic), null |
+| `StatuteLevel` | string | `"SF"` | **Messy**: `MA`, `MB`, `F1`, `F2`, `F3`, `SF`, `MISDEMEANO` (sic), null — nulls were ~40% of a recent 50-row sample. Treat as an opaque label, never enumerate or validate strictly |
 | `BondAmount` | int | `2500` | Dollars. Can be null. Huge for F1s (e.g. 1,000,000) |
 | `IsBondDenied` | bool | `false` | All `false` in the current snapshot; still check per charge |
 | `ArrestingAgency` | string | `"STARR COUNTY SHERIFF'S OFFICE"` | 10+ agencies observed: SCSO, Rio Grande City PD, HCSO, DPS, Roma PD, HIDTA, ... |

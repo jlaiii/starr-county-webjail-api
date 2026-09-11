@@ -8,11 +8,19 @@ ignores most of the query language.
 
 | Param | Behavior | Example |
 |---|---|---|
-| `$limit` | Page size. **Hard cap 50.** `$limit=60` returns 50. `$limit=0` returns an empty `data` with the true `total` (cheap count) | `?$limit=50` |
-| `$skip` | Offset. Past the end → empty `data`, `total` unchanged | `?$skip=50` |
+| `$limit` | Page size. **Hard cap 50.** `$limit=60` returns 50. **Default page = 10.** `$limit=0` returns an empty `data` with the true `total` (cheap count) | `?$limit=50` |
+| `$skip` | Offset. Past the end → empty `data`, `total` unchanged. **A negative value behaves like its absolute value** (`$skip=-5` skips 5 forward, it does not clamp to 0) | `?$skip=50` |
 | `$sort[field]` | Asc/desc by any real field: `-1` desc, `1` asc. Verified: `createdAt`, `updatedAt`, `BookingID`, `BookingDate`, `LastName`, `DOB` | `?$sort[createdAt]=-1` |
 
 Only these three. Everything else in the rest of this doc is ignored.
+
+Two more query-string quirks worth knowing:
+
+- **A repeated param keeps the FIRST value** (`?$limit=5&$limit=2` → `limit: 5`),
+  which is the opposite of the usual "last wins" — don't build queries by appending.
+- A non-numeric `$limit` (`?$limit=abc`) answers `200` with `"limit": null` and
+  unfiltered records; unknown or malformed `$sort` is ignored. **The box never
+  4xxs because of a bad query param** — validate on your side.
 
 ## Silently ignored (all verified Sep 2026)
 
@@ -71,9 +79,15 @@ production). Stop on the short page.
 
 ## Polite usage notes
 
-- No rate limits were observed, but the box is an unauthenticated public
-  system with no caching — every request costs it a fresh Mongo query plus
-  ~300 KB of base64 per record. Keep polling modest (≥1 min cadence for
-  watchers), cache aggressively, and reuse one connection where possible.
+- No rate limits were observed (a 12-request burst answered `200` throughout,
+  median 92 ms), but the box is an unauthenticated public system with no
+  caching — every request costs it a fresh Mongo query plus ~300 KB of base64
+  per record. Keep polling modest (≥1 min cadence for watchers), cache
+  aggressively, and reuse one connection where possible.
+- **Always send `Accept-Encoding: gzip`** (25–35% smaller) and reuse the weak
+  `ETag` with `If-None-Match`: an unchanged page answers `304` with an empty
+  body, so "anything new?" costs zero bytes on quiet ticks.
+- Connections are **not** reusable (`Connection: close` on every response) — one
+  TCP handshake per request; there is no session to warm up.
 - Always send a descriptive `User-Agent` (`curl`, Python `urllib`, or your
   agent name — the box serves them all).

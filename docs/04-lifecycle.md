@@ -10,12 +10,14 @@ The county system writes to this API on a **scheduled hourly job**:
   at second `01`, the rest at `02`. New bookings are not visible the instant
   someone is arrested — they appear when the county's job inserts them
   (typically same or next calendar day).
-- **`updatedAt` is re-stamped on EVERY record at the top of every hour.**
-  A page sorted by `updatedAt` desc shows the entire roster churning hourly —
-  this is a full re-touch, not real activity.
+- **`updatedAt` is re-stamped on EVERY record at the top of every hour.** The
+  sweep is sequential and takes ~50 s (observed: `01:00:02` → `01:00:53` across
+  83 records), so for that minute the collection is half-old/half-new and a page
+  sorted by `updatedAt` desc shows the whole roster churning hourly. This is a
+  full re-touch, not real activity.
 
 Measured Sep 2026: `BookingDate` (the logged booking date) vs `createdAt`
-(API insert) gap: min 6 h, median **22 h**, max 89 h. So:
+(API insert) gap: min 6 h, median **21–22 h**, max 89 h. So:
 
 > **`BookingDate` = when the county logged the booking.
 > `createdAt` = when this API first saw it.

@@ -6,16 +6,29 @@ that prevents the classic mistakes.
 
 ## 1. Payloads are huge — budget every fetch
 
-Each `/inmates` record embeds a **base64 mugshot** and weighs ~150–300 KB.
-The full roster (~82–90 records) is **~25 MB** over 2 pages.
+Each `/inmates` record embeds a **base64 mugshot** and weighs ~150–300 KB (base64
+median ~267 KB). The full roster (~83 records) is **~22 MB** over 2 pages.
 
-- One `$limit=1` probe = ~300 KB. A full scan = ~25 MB. Every request hits
+- One `$limit=1` probe = ~300 KB. A full scan = ~22 MB. Every request hits
   the county's box cold (no cache).
 - **Do not** poll full pages on a fast cadence just to check "anything new?"
 - New-booking check that costs ~300 KB: fetch `$limit=1&$sort[createdAt]=-1`
   and compare the top record's `createdAt` to your watermark (see #3).
   Full-scan rarely (hourly) as a safety net.
-- A 1-minute full-roster poll would pull ~36 GB/day from the county. Don't.
+- A 1-minute full-roster poll would pull ~32 GB/day from the county. Don't.
+
+Cheaper paths that are easy to miss (all verified, see
+[06-recipes.md](06-recipes.md)):
+
+| Need | Do this | Cost |
+|---|---|---|
+| How many inmates? | `GET /inmates?$limit=0` | 41 bytes |
+| Unchanged since last look? | repeat request with `If-None-Match: <ETag>` | **304, 0 bytes** |
+| One booking's full record | `GET /inmates/<ptsSubjectID>` (the id route) | ~200 KB gzipped |
+| Compress everything | send `Accept-Encoding: gzip` | −25–35% (stdlib `urllib`/`curl` never ask) |
+
+Also: connections are **not** keep-alive (`Connection: close`), so every request
+pays a fresh TCP handshake — batch your work, don't chat in loops.
 
 ## 2. Filters are ignored — including ones that look like they work
 
@@ -107,6 +120,34 @@ merged digests: one message with the person's bold name, booking number,
 dates, charges; then the mugshot as its own attachment right after. When
 several bookings arrive together, send pairs sequentially so photos never
 detach from their owners. HTML-escape every name/field you interpolate.
+
+## 11. The id route is keyed on `ptsSubjectID` — not on the booking number
+
+`GET /inmates/<id>` resolves the id against **`ptsSubjectID`** and returns that
+single record object. Consequences:
+
+- `GET /inmates/10501` where `10501` is a `ptsBookingID` → `404 No record found for id '10501'`.
+- `GET /inmates/anything-non-numeric` → `400 BadRequest: Cast to number failed for value "…" at path "ptsSubjectID" for model "inmates"`.
+- `GET /inmates/<ptsSubjectID>` → the full record (~276 KB, ~250 ms) — much
+  cheaper than paging a 13 MB page to re-check one booking.
+- There is still **no** lookup by public booking number: match `BookingID`
+  client-side over the pages you fetched.
+
+## 12. Query-string oddities that cause silent wrong results
+
+- A repeated param keeps the **first** value (`?$limit=5&$limit=2` → `limit: 5`).
+- A negative `$skip` behaves like `abs($skip)`: it skips forward, it does not clamp to 0.
+- A non-numeric `$limit` returns `200` with `"limit": null`; a malformed or
+  unknown `$sort` is ignored. Bad params never produce a 4xx — they produce
+  plausible-looking wrong data. Validate your own query before sending it.
+
+## 13. Don't try to replace polling with the realtime socket
+
+`/socket.io/` answers an Engine.IO v3 handshake and accepts a namespace connect,
+which looks like a way to subscribe to `created`/`updated` events instead of
+polling. It is not: the service emits nothing to anonymous subscribers (verified
+across an hourly batch). Details and the exact traffic in
+[07-realtime.md](07-realtime.md). Poll with `If-None-Match` instead.
 
 ## Polite-use summary
 
